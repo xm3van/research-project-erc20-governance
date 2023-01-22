@@ -1,0 +1,8 @@
+Run over unique_addresses
+
+python3 /home/user/eisermann/.local/lib/python3.9/site-packages/ethereumetl extract_csv_column --/local/scratch/exported/governance-erc20/project_erc20_governanceTokens_data/df_unique_addresses2.csv --column unique_addresses --output /local/scratch/exported/governance-erc20/project_erc20_governanceTokens_data/df_unique_addresses2.csv/contract_addresses.csv
+
+ethereumetl export_contracts --contract-addresses contract_addresses.txt \
+--provider-uri http://127.0.0.1:8545 --output contracts.csv
+# questions
+Q1: Where do I put the porvider comand? --provider-uri http://127.0.0.1:8545

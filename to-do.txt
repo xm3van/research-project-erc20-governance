@@ -1,0 +1,32 @@
+1. EOA or Snart Contract - 15.01.2023
+    --> in either case I need the node 
+        a) filter if first "successful" tx has not "0x" - etl parsed all tx however
+        b) Check directly 3 mil addresses with web.py
+2. Multisig or other Smart Contract  - 22.01.2023
+3. Add Address label externally sources - 22.01.2023
+4. Schaer Breakdown token ownership furhter 
+    - LP - 29.01.2023
+        - Identify LP Share tokens 
+        - Parse LP Share tokens tx 
+        - Net balances at Snapshot date - 50 pct to ownership
+        - 
+    - Borrowing & Lending - 29.01.2023
+        - Take 3 biggest lending market 
+        - Understand how to Identify correctly balances of depositor/ borrowers
+        - Net balances at Snapshot date with correct ratio
+
+    - Staking - 05.02.2023
+        - Identify in project docs & investigate
+
+3. Clustering heuristics - 05.02.2023
+- Decide on clustering heuristic
+- endode them 
+- relabel addresses 
+
+4. Bipartite graph - 12.02.2023
+    - Token 
+    - Addresses 
+
+5. Prepare paper & Poster presentation - 19.02.2023
+
+6. COnference - 28.02.2023
