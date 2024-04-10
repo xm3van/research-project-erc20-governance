@@ -139,7 +139,7 @@ def t_test(sample_data, control_data, alternative='greater'):
 
 import scipy.stats as stats
 
-def median_t_test(group1_data, group2_data, alternative='greater', alpha=0.05):
+def median_t_test(group1_data, group2_data, alternative='greater'):
     """
     Perform a Mann-Whitney U test (t-test for the median) to compare medians between two groups.
 
@@ -153,8 +153,9 @@ def median_t_test(group1_data, group2_data, alternative='greater', alpha=0.05):
     - p_value: The two-tailed p-value for the test.
     - significant: A boolean indicating whether the difference is statistically significant.
     """
-    if len(sample_data) < 15: 
-        # print('Insufficient Sample Size to ensure statistical validitiy of t-test') 
+    # Check for sufficient variability within each group
+    if len(np.unique(group1_data)) < 2 or len(np.unique(group2_data)) < 2:
+        print('Insufficient variability within one or both groups for Mann-Whitney U test.')
         return 1
     
     # Perform Mann-Whitney U test

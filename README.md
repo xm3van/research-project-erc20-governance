@@ -1,6 +1,4 @@
-# Project Structure: 
-
-<!-- bipartite_complex_systems_token_network_projections -->
+# Project Structure: Governance Centralization Using Bipartite Complex Systems Token Network Projections
 
 This document outlines the organizational structure of the project, detailing each component's purpose and contents.
 
@@ -38,7 +36,7 @@ project_root/
 │
 ├── notebooks/              # Jupyter notebooks for experimentation and demonstration
 │
-├── notebooks/              # Jupyter notebooks for experimentation and demonstration
+├── outputs/                # directory for research outputs
 │
 └── main.py                 # Main script that orchestrates the data analysis process
 ```
