@@ -24,7 +24,7 @@ load_dotenv()
 path = os.environ['DATA_DIRECTORY']
 df_snapshots = pd.read_csv('data/snapshot_selection.csv')
 df_tokens = pd.read_csv("data/final_token_selection.csv")
-df_token_price = pd.read_csv("data/price_table.csv")
+df_token_price = pd.read_csv("data/price_table.csv", index_col=0)
 
 TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_enriched")
 VALIDATED_PROJECTIONS_INPUT_PATH = join(path, 'data/validated_token_projection_graphs')
@@ -80,11 +80,7 @@ def cliques_main():
 
         for contract_address in ddf.token_address.unique(): 
 
-            # token_price = df_token_price.loc[contract_address, str(snapshot_block_height)]
-            try:
-                token_price = df_token_price.at[(contract_address, str(snapshot_block_height)), 'price_column_name']  # Replace 'price_column_name' with the actual column name
-            except KeyError:
-                token_price = np.nan # TO-DO: FIX
+            token_price = df_token_price.loc[str(contract_address), str(snapshot_block_height)]
 
             ddf.loc[ddf.token_address == contract_address, 'token_price_usd'] = token_price
 
@@ -101,7 +97,24 @@ def cliques_main():
         nx.set_node_attributes(G, token_lookup, 'name')
 
         # Find all cliques in the graph
-        all_cliques = list(nx.find_cliques(G)) #POTENTIAL ISSUE: NODE ORDER
+        link_and_cliques = list(nx.find_cliques(G)) #POTENTIAL ISSUE: NODE ORDER
+        
+        
+        # filter out links as they are thematised in Link analysis separately
+        # Note: they occure as Brom 1973 algo is node based
+        
+        all_cliques = []
+        
+        for clique in link_and_cliques: 
+            
+            if len(clique) == 2: # links 
+                
+                pass 
+            
+            else:
+                
+                all_cliques.append(clique)
+                
 
         # Ensure that cliques are always ordered the same 
         # Prevents maker-yearn and yearn-maker being counted separately
