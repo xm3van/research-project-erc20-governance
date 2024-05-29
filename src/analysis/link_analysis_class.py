@@ -1,11 +1,47 @@
-from scipy.stats import hypergeom 
 import pandas as pd
 import numpy as np
-
-from src.utilities.metrics_and_tests import *
-from src.utilities.utils import * 
-
+import pickle
+from os.path import join
 from itertools import combinations
+from src.utilities.metrics_and_tests import *
+from src.utilities.utils import *
+
+class LinkData:
+    def __init__(self, data_path):
+        self.data_path = data_path
+        self.links = self.load_links()
+        self.metric_names = self.get_metric_names()
+
+    def load_links(self):
+        with open(self.data_path, 'rb') as handle:
+            links = pickle.load(handle)
+        return links
+
+    def get_metric_names(self):
+        example_key = next(iter(self.links['sample']))
+        metrics_example = self.links['sample'][example_key]
+        first_link_key = next(iter(metrics_example.keys()))
+        metric_names = list(metrics_example[first_link_key].keys())
+        return metric_names
+
+    def get_metric_data(self, group, metric_name):
+        data = []
+
+        for date, snapshot_data in self.links[group].items():
+            for link_name, metrics in snapshot_data.items():
+                try:
+                    metric_value = metrics[metric_name]
+                except KeyError:
+                    metric_value = np.nan
+                data.append({'Date': date, 'Link Name': link_name, metric_name: metric_value})
+
+        df_metric = pd.DataFrame(data)
+        df_metric = df_metric.pivot(index='Link Name', columns='Date', values=metric_name)
+
+        return df_metric
+
+
+
 
 class LinkAnalysis:
     def __init__(self, link, dataFrame, sub_dataFrame, sub_dataFrame_control, token_lookup):
