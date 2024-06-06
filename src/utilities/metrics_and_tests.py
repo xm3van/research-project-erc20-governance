@@ -1,5 +1,23 @@
-import numpy as np
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import networkx as nx
+
+def jaccard_similarity(g1, g2):
+    """
+    Calculate Jaccard Similarity between two graphs.
+
+    Parameters:
+    g1 (networkx.Graph): The first graph.
+    g2 (networkx.Graph): The second graph.
+
+    Returns:
+    float: Jaccard Similarity between the two graphs.
+    """
+    intersection = len(set(g1.edges()).intersection(set(g2.edges())))
+    union = len(set(g1.edges()).union(set(g2.edges())))
+    return intersection / union if union != 0 else 0
+
 
 def gini(array):
     """
