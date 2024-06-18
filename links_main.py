@@ -10,9 +10,8 @@ import os
 from dotenv import load_dotenv
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import * 
-from src.analysis.link_analysis_class import LinkAnalysis
-
-import pickle  # Add this import to the top of your script
+from src.analysis.link_analysis import LinkAnalysis
+import pickle 
 
 load_dotenv()  
 
@@ -37,7 +36,8 @@ known_burner_addresses = ['0x0000000000000000000000000000000000000000',
                         '0x000000000000000000000000000000000000dead']
 
 def links_main(): 
-    links = {'sample': {}, 'control': {}, 'pvalues': {}}
+    links = {'sample': {}, 'control': {}, 'pvalues': {}, 'sample_directional':{}, 'control_directional':{}, 'pvalues_directional':{}}
+
 
     for _, row in df_snapshots[df_snapshots['Block Height'] > 11547458].iterrows():
 
@@ -48,6 +48,10 @@ def links_main():
 
         # Load data
         ddf = pd.read_csv(join(TOKEN_BALANCE_TABLE_INPUT_PATH, f'token_holder_snapshot_balance_labelled_{snapshot_block_height}.csv'))
+        
+        # Ensure we only check for tokens we want to analyze
+        ddf = ddf[ddf.token_address.str.lower().isin(df_tokens.address.str.lower())]
+
 
         # Remove burner addresses
         ddf = ddf[~ddf.address.isin(known_burner_addresses)]
@@ -73,9 +77,14 @@ def links_main():
         links_snapshot = {}
         links_snapshot_control = {} 
         links_pvalues = {}
+        
+        links_snapshot_directional = {}
+        links_snapshot_control_directional= {} 
+        links_pvalues_directional = {}
 
         for link in all_links:
             analyzer = LinkAnalysis(link, ddf, None, None, token_lookup)
+            analyzer.directional = False 
             link_members_unique = analyzer.link_member_wallets()
 
             if not link_members_unique:
@@ -88,10 +97,14 @@ def links_main():
             # Control DataFrame
             filter1 = ddf.token_address.isin(link)
             filter2 = ddf.address.isin(link_members_unique)
+            
+            # Control Population are link token members which are not part of identified link members 
             relevant_population = ddf[filter1 & ~filter2].address.unique()
+            
+            # Sample address without replacement 
             control_sample = random.sample(list(relevant_population), len(link_members_unique))
             ddf_sub_control = ddf[ddf.address.isin(control_sample)].copy()
-
+            
             # Perform analysis
             analyzer.sub_dataFrame = ddf_sub
             analyzer.sub_dataFrame_control = ddf_sub_control
@@ -100,18 +113,55 @@ def links_main():
             links_snapshot[str(link_name)] = results
             links_snapshot_control[str(link_name)] = results_control
             links_pvalues[str(link_name)] = pvalues
+            
+            
+            # Control DataFrame Directional            
+            for token in link: 
+                
+                # Sample DataFrame - contains clique members but we only look at one token of a link
+                ddf_sub_directional = ddf[(ddf.address.isin(link_members_unique)) & (ddf.token_address == token)].copy() 
+                
+                # For naming convention
+                token_name = token_lookup[token]
+                
+                # Control filters 
+                filter1 = ddf.token_address == token
+                filter2 = ddf.address.isin(link_members_unique)
+            
+                # Control Population are token members which are not part of identified link members 
+                relevant_population_directional = ddf[filter1 & ~filter2].address.unique()
+                control_directional = random.sample(list(relevant_population_directional), len(link_members_unique))
+                ddf_control_directional = ddf[ddf.address.isin(control_directional)].copy()
+                
+                # update analzyer to directional 
+                analyzer_directional = LinkAnalysis(link, ddf, None, None, token_lookup)
+                analyzer_directional.directional = True 
+                analyzer_directional.sub_dataFrame = ddf_sub_directional
+                analyzer_directional.sub_dataFrame_control = ddf_control_directional
+                link_name, results, results_control, pvalues = analyzer_directional.analyze_link()
+                
+                links_snapshot_directional[f'{link_name}: {token_name}'] = results
+                links_snapshot_control_directional[f'{link_name}: {token_name}'] = results_control
+                links_pvalues_directional[f'{link_name}: {token_name}'] = pvalues
+
+
 
         links['sample'][snapshot_date] = links_snapshot
         links['control'][snapshot_date] = links_snapshot_control
         links['pvalues'][snapshot_date] = links_pvalues
         
+        links['sample_directional'][snapshot_date] = links_snapshot_directional
+        links['control_directional'][snapshot_date] = links_snapshot_control_directional
+        links['pvalues_directional'][snapshot_date] = links_pvalues_directional
+
     return links 
 
 if __name__ == "__main__":
     links = links_main()  # Store the returned links dictionary
 
     # Specify the path to save the links data
-    output_path = join(path, 'data/links_data_class.pkl')  # Ensure `path` is correctly defined in your environment
+    output_path = join(path, 'data/links_data_class.pkl') 
+    
     # Serialize and save the links dictionary
     with open(output_path, 'wb') as handle:
         pickle.dump(links, handle, protocol=pickle.HIGHEST_PROTOCOL)

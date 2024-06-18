@@ -56,130 +56,153 @@ def gini(array):
 
 
 
+def permutation_test(full_sample, cdw_sample, num_permutations=1000):
+    n_cdw = len(cdw_sample)
+    full_mean = np.mean(full_sample)
+    cdw_mean = np.mean(cdw_sample)
+    
+    # Calculate observed test statistic M_CDW
+    M_CDW = cdw_mean - full_mean
+    
+    # Generate permutation samples and calculate M_k
+    M_k_values = []
+    for _ in range(num_permutations):
+        perm_sample = np.random.choice(full_sample, size=n_cdw, replace=False)
+        perm_mean = np.mean(perm_sample)
+        M_k = perm_mean - full_mean
+        M_k_values.append(M_k)
+    
+    # Convert M_k_values to a numpy array for easier quantile calculation
+    M_k_values = np.array(M_k_values)
+    
+    # Calculate the 95th percentile of the permutation test statistics
+    threshold = np.percentile(M_k_values, 95)
+    
+    # Calculate p-value as the proportion of M_k values greater than or equal to M_CDW
+    p_value = np.mean(M_k_values >= M_CDW)
+    
+    return M_CDW, threshold, p_value
 
-import scipy.stats as stats
+# # Example usage
+# full_sample = np.random.normal(loc=10, scale=2, size=1000)  # All token holders
+# cdw_sample = np.random.normal(loc=12, scale=2, size=30)    # CDW token holders
+
+# # Perform the permutation test
+# M_CDW, threshold, p_value = permutation_test(full_sample, cdw_sample)
+# print(f"Observed M_CDW: {M_CDW}")
+# print(f"95th percentile threshold: {threshold}")
+# print(f"P-value: {p_value}")
+
+
+
 import numpy as np
+import scipy.stats as stats
+from statsmodels.stats.power import TTestIndPower
 
-def one_tailed_gini_t_test(group1_data, group2_data, alpha=0.05, direction="lower"):
-    """
-    Perform a one-tailed t-test to compare Gini coefficients between two groups, testing the hypothesis that Group 1 has a more equal distribution than Group 2.
-
-    Parameters:
-    - group1_data: List or array containing data for the first group.
-    - group2_data: List or array containing data for the second group.
-    - alpha: Significance level (default is 0.05).
-    - direction: Direction of the test ("lower" for lower Gini coefficient in Group 1, "higher" for higher Gini coefficient in Group 1).
-
-    Returns:
-    - t_statistic: The t-statistic for the t-test.
-    - p_value: The one-tailed p-value for the t-test.
-    - significant: A boolean indicating whether the difference is statistically significant.
-    """
+def t_test(sample_data, control_data, alternative='greater'):
+    # Check independence assumption (this needs to be ensured during data collection)
+    # Assuming independence for the purpose of this function
     
-    if len(group1_data) < 15 or len(group2_data) < 15: 
-        # print('Insufficient Sample Size to ensure statistical validitiy of t-test') 
-        return np.nan
+    # Perform power analysis to determine if sample size is sufficient
+    effect_size = np.abs(np.mean(sample_data) - np.mean(control_data)) / np.sqrt((np.var(sample_data) + np.var(control_data)) / 2)
+    power_analysis = TTestIndPower()
+    required_n = power_analysis.solve_power(effect_size=effect_size, alpha=0.05, power=0.8, ratio=len(control_data)/len(sample_data))
     
-    # Calculate Gini coefficients for each group
-    gini_group1 = gini(group1_data)
-    gini_group2 = gini(group2_data)
-
-    # Sample sizes for each group
-    n_group1 = len(group1_data)
-    n_group2 = len(group2_data)
-
-    # Calculate the standard errors for each group
-    se_group1 = (1 / (2 * n_group1)) ** 0.5
-    se_group2 = (1 / (2 * n_group2)) ** 0.5
-
-    # Calculate the t-statistic
-    t_statistic = (gini_group1 - gini_group2) / ((se_group1 ** 2 / n_group1) + (se_group2 ** 2 / n_group2)) ** 0.5
-
-    # Calculate the degrees of freedom
-    degrees_of_freedom = n_group1 + n_group2 - 2  # Explanation: (n1 + n2 - 2) degrees of freedom for the t-test
-
-    # Calculate the one-tailed p-value based on the specified direction
-    if direction == "lower":
-        p_value = stats.t.cdf(t_statistic, df=degrees_of_freedom)
-    elif direction == "higher":
-        p_value = 1 - stats.t.cdf(t_statistic, df=degrees_of_freedom)
-    else:
-        raise ValueError("Direction must be 'lower' or 'higher'.")
-
-    # Determine if the result is statistically significant
-    significant = p_value < alpha
-
-    return p_value
-
-
-
-
-def t_test(sample_data, control_data, alternative='greater'): 
+    if len(sample_data) < required_n or len(control_data) < required_n:
+        print('Insufficient Sample Size to ensure statistical validity of t-test')
+        return 1, None
     
-    # Test applicability of t-test
-    
-    ### Independence: The data in both groups should be independent of each other. - True 
-    
-    if len(sample_data) < 15 or len(control_data) < 15: 
-        print('Insufficient Sample Size to ensure statistical validitiy of t-test') 
-        return 1
-    
-    elif len(sample_data) < 50 or len(control_data) < 50: 
-    # Only test if sufficiently large sample size (typically greater than 30-40 observations per group) 
-    # the central limit theorem often comes into play.
-    
-        ### Normality: The data in each group should follow a roughly normal distribution.
-        _, p_value = stats.shapiro(sample_data)
+    # For small sample sizes (< 30), check for normality
+    if len(sample_data) < 30 or len(control_data) < 30:
+        # Shapiro-Wilk test for normality
+        _, p_value_sample = stats.shapiro(sample_data)
         _, p_value_control = stats.shapiro(control_data)
 
-        if p_value < 0.05 or p_value_control < 0.05: 
+        if p_value_sample < 0.05 or p_value_control < 0.05:
+            print(f"Data significantly deviates from normal distribution: Sample: {p_value_sample} || Control: {p_value_control}")
+            # Perform Mann-Whitney U test as a non-parametric alternative
+            u_statistic, p_value = stats.mannwhitneyu(sample_data, control_data, alternative=alternative)
+            return u_statistic, p_value
 
-            print(f"Significantly deviates from a normal distribution: Sample: {p_value} || Control: {p_value_control}") 
-            return 1
+    # Check for homogeneity of variances using Levene's test
+    _, p_value_levene = stats.levene(sample_data, control_data)
 
-        ### Homogeneity of Variances: The variances in both groups should be approximately equal. You can check this using statistical tests like Levene's test or by visual inspection of boxplots.
-        _, p_value = stats.levene(sample_data, control_data)
-
-        if p_value < 0.05: 
-
-            print(f"The variances are not approximately equal: Sample: {p_value} || Control: {p_value_control}") 
-            return 1
-        
-    
-    # Apply t-test 
-    ### For all metrics we expect 
-    
-    # Perform the one-sided t-test
-    _, p_value = stats.ttest_ind(sample_data, control_data, alternative=alternative)
-    return p_value
-
-
-
-import scipy.stats as stats
-
-def median_t_test(group1_data, group2_data, alternative='greater'):
-    """
-    Perform a Mann-Whitney U test (t-test for the median) to compare medians between two groups.
-
-    Parameters:
-    - group1_data: List or array containing data for the first group.
-    - group2_data: List or array containing data for the second group.
-    - alpha: Significance level (default is 0.05).
-
-    Returns:
-    - u_statistic: The Mann-Whitney U statistic.
-    - p_value: The two-tailed p-value for the test.
-    - significant: A boolean indicating whether the difference is statistically significant.
-    """
-    # Check for sufficient variability within each group
-    if len(np.unique(group1_data)) < 2 or len(np.unique(group2_data)) < 2:
-        print('Insufficient variability within one or both groups for Mann-Whitney U test.')
-        return 1
-    
-    # Perform Mann-Whitney U test
-    _, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative=alternative)
+    if p_value_levene < 0.05:
+        print(f"The variances are not approximately equal: Levene's Test p-value: {p_value_levene}")
+        # Perform Welch's t-test
+        t_statistic, p_value = stats.ttest_ind(sample_data, control_data, equal_var=False, alternative=alternative)
+    else:
+        # Perform Student's t-test
+        t_statistic, p_value = stats.ttest_ind(sample_data, control_data, equal_var=True, alternative=alternative)
 
     return p_value
+
+
+# def t_test(sample_data, control_data, alternative='greater'): 
+    
+#     # Test applicability of t-test
+    
+#     ### Independence: The data in both groups should be independent of each other. - True 
+    
+#     if len(sample_data) < 15 or len(control_data) < 15: 
+#         print('Insufficient Sample Size to ensure statistical validitiy of t-test') 
+#         return 1
+    
+#     elif len(sample_data) < 30 or len(control_data) < 30: 
+#     # Only test if sufficiently large sample size (typically greater than 30-40 observations per group) 
+#     # the central limit theorem often comes into play.
+    
+#         ### Normality: The data in each group should follow a roughly normal distribution.
+#         _, p_value = stats.shapiro(sample_data)
+#         _, p_value_control = stats.shapiro(control_data)
+
+#         if p_value < 0.05 or p_value_control < 0.05: 
+
+#             print(f"Significantly deviates from a normal distribution: Sample: {p_value} || Control: {p_value_control}") 
+#             return 1
+
+#         ### Homogeneity of Variances: The variances in both groups should be approximately equal. You can check this using statistical tests like Levene's test or by visual inspection of boxplots.
+#         _, p_value = stats.levene(sample_data, control_data)
+
+#         if p_value < 0.05: 
+
+#             print(f"The variances are not approximately equal: Sample: {p_value} || Control: {p_value_control}") 
+#             # Perform the  Welch’s t-test
+#             _, p_value = stats.ttest_ind(sample_data, control_data, equal_var=False,  alternative=alternative)
+#         else: 
+#              _, p_value = stats.ttest_ind(sample_data, control_data, equal_var=True,  alternative=alternative)
+
+
+#     return p_value
+
+
+
+
+# import scipy.stats as stats
+
+# def median_t_test(group1_data, group2_data, alternative='greater'):
+#     """
+#     Perform a Mann-Whitney U test (t-test for the median) to compare medians between two groups.
+
+#     Parameters:
+#     - group1_data: List or array containing data for the first group.
+#     - group2_data: List or array containing data for the second group.
+#     - alpha: Significance level (default is 0.05).
+
+#     Returns:
+#     - u_statistic: The Mann-Whitney U statistic.
+#     - p_value: The two-tailed p-value for the test.
+#     - significant: A boolean indicating whether the difference is statistically significant.
+#     """
+#     # Check for sufficient variability within each group
+#     if len(np.unique(group1_data)) < 2 or len(np.unique(group2_data)) < 2:
+#         print('Insufficient variability within one or both groups for Mann-Whitney U test.')
+#         return 1
+    
+#     # Perform Mann-Whitney U test
+#     _, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative=alternative)
+
+#     return p_value
 
 
 
@@ -204,10 +227,3 @@ def pval_to_significance(pval):
     
     return significance_symbol
 
-def jaccard_similarity(matrix1, matrix2):
-    set1 = set(np.reshape(matrix1, -1))
-    set2 = set(np.reshape(matrix2, -1))
-    intersection = len(set1.intersection(set2))
-    union = len(set1.union(set2))
-    similarity = intersection / union
-    return similarity

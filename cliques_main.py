@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import *
-from src.analysis.clique_analysis_class import CliqueAnalysis, clique_member_wallets_upper, clique_member_wallets_lower
+from src.analysis.clique_analysis import CliqueAnalysis, clique_member_wallets_weak, clique_member_wallets_strong
 
 load_dotenv()
 
@@ -40,6 +40,12 @@ known_burner_addresses = [
 
 def load_and_prepare_data(snapshot_block_height):
     ddf = pd.read_csv(join(TOKEN_BALANCE_TABLE_INPUT_PATH, f'token_holder_snapshot_balance_labelled_{snapshot_block_height}.csv'))
+    
+    # Ensure we only check for tokens we want to analyze
+    ddf = ddf[ddf.token_address.str.lower().isin(df_tokens.address.str.lower())]
+
+
+    
     ddf = ddf[~ddf.address.isin(known_burner_addresses)]
     ddf = ddf[ddf.pct_supply > 0.000005]
 
@@ -69,9 +75,9 @@ def analyze_cliques(snapshot_block_height, snapshot_date, ddf, all_cliques, filt
     for clique in all_cliques:
         clique_members_unique = []
         if filter_method == 'upper_bound':
-            clique_members_unique = clique_member_wallets_upper(clique, ddf)
+            clique_members_unique = clique_member_wallets_weak(clique, ddf)
         elif filter_method == 'lower_bound':
-            clique_members_unique = clique_member_wallets_lower(clique, ddf)
+            clique_members_unique = clique_member_wallets_strong(clique, ddf)
 
         if not clique_members_unique:
             print("Skip")
@@ -95,8 +101,8 @@ def analyze_cliques(snapshot_block_height, snapshot_date, ddf, all_cliques, filt
 
 def cliques_main():
     cliques = {
-        'upper_bound': {'sample': {}, 'control': {}, 'pvalues': {}},
-        'lower_bound': {'sample': {}, 'control': {}, 'pvalues': {}}
+        'upper_bound': {'sample': {},'control': {},'pvalues': {}, 'sample_directional':{}, 'control_directional':{}, 'pvalues_directional':{}}, # change to adjust nomencalture to we upper to weak 
+        'lower_bound': {'sample': {},'control': {},'pvalues': {}, 'sample_directional':{}, 'control_directional':{}, 'pvalues_directional':{}} # change to adjust nomencalture to we lower to strong 
     }
 
     for _, row in df_snapshots[df_snapshots['Block Height'] > 11547458].iterrows():
