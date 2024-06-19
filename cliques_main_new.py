@@ -39,7 +39,6 @@ known_burner_addresses = [
     '0x000000000000000000000000000000000000dead'
 ]
 
-log = {}
 
 def cliques_main():
 
@@ -192,6 +191,5 @@ if __name__ == "__main__":
     print(f"Cliques data saved to {output_path}")
     print(f"insufficient_control_population_tokens: {insufficient_control_population}")
     
-    print("======LOG====")
-    print(log)
+
 

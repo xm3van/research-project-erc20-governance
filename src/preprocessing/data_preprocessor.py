@@ -1,4 +1,3 @@
-import dask.dataframe as dd
 import pandas as pd
 import numpy as np
 import os
@@ -27,7 +26,7 @@ def process_token_transfers(snapshot_selection_csv_path, token_transfers_csv_pat
     """
 
     # Load all token transfers
-    ddf = dd.read_csv(token_transfers_csv_path)
+    ddf = pd.read_csv(token_transfers_csv_path)
 
     # Set value as float64
     ddf['value'] = ddf['value'].astype("float64")
@@ -124,7 +123,7 @@ def enrich_token_balance_tables(snapshot_selection_csv_path,
         df_token_balance = df_token_balance[~df_token_balance.address.isin(known_burner_addresses)]
         
         # Update checksum address
-        df_token_balance['address_checksum'] = df_token_balance.address.apply(lambda x: w3.toChecksumAddress(x))
+        df_token_balance['address_checksum'] = df_token_balance.address.apply(lambda x: w3.to_checksum_address(x))
         
         # Label address check - get smart contract code for addresses in question
 

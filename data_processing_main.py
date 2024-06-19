@@ -24,7 +24,7 @@ def main():
                                  token_list_csv_path=token_list_csv_path, 
                                  token_balance_dir=snapshot_token_balance_tables_dir,
                                  output_dir=snapshot_token_balance_tables_enriched_dir,
-                                 from_block_height=11547458)
+                                 from_block_height=11659570) #11547458
  
     
 if __name__ == "__main__":
