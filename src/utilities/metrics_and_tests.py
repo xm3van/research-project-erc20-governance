@@ -56,7 +56,12 @@ def gini(array):
 
 
 
-def permutation_test(full_sample, cdw_sample, num_permutations=1000):
+def permutation_test(cdw_sample,full_sample, alternative='greater', num_permutations=1000):
+
+    if len(full_sample) == 0 or len(cdw_sample) == 0:
+        return 1.0 # non significant
+
+
     n_cdw = len(cdw_sample)
     full_mean = np.mean(full_sample)
     cdw_mean = np.mean(cdw_sample)
@@ -72,16 +77,22 @@ def permutation_test(full_sample, cdw_sample, num_permutations=1000):
         M_k = perm_mean - full_mean
         M_k_values.append(M_k)
     
-    # Convert M_k_values to a numpy array for easier quantile calculation
+    # Convert M_k_values to a numpy array for easier calculation
     M_k_values = np.array(M_k_values)
     
-    # Calculate the 95th percentile of the permutation test statistics
-    threshold = np.percentile(M_k_values, 95)
+    if alternative == 'greater':
+        # Calculate p-value for greater alternative
+        p_value = np.mean(M_k_values >= M_CDW)
+    elif alternative == 'lower':
+        # Calculate p-value for less alternative
+        p_value = np.mean(M_k_values <= M_CDW)
+    else:
+        raise ValueError("Alternative hypothesis must be 'greater' or 'less'")
     
-    # Calculate p-value as the proportion of M_k values greater than or equal to M_CDW
-    p_value = np.mean(M_k_values >= M_CDW)
+    return p_value
+
     
-    return M_CDW, threshold, p_value
+    # return M_CDW, p_value
 
 # # Example usage
 # full_sample = np.random.normal(loc=10, scale=2, size=1000)  # All token holders
