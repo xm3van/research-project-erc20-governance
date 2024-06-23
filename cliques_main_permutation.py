@@ -66,7 +66,7 @@ def cliques_main():
         ddf = ddf[~ddf.address.isin(known_burner_addresses)]
         
         # Only include wallets holding more than 0.000005 ~ 0.0005% of supply 
-        ddf = ddf[ddf.pct_supply > 0.000005]
+        # ddf = ddf[ddf.pct_supply > 0.000005]
         
         # Assign token prices 
         ddf['token_price_usd'] = ddf['token_address'].apply(lambda x: df_token_price.loc[str(x), str(snapshot_block_height)])

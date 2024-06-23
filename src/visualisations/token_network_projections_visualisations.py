@@ -127,42 +127,6 @@ def visualize_network_grid(graphs, dates, address_to_symbol, output_directory, l
     fig.suptitle('Validated Token Network Projections Over Time', fontsize=16)
     plt.savefig(os.path.join(output_directory, "network_projection_grid.png"), format='png', dpi=300)
     plt.show()
-
-
-def visualize_wallet_network_grid(graphs, dates, address_to_symbol, output_directory, layout=nx.kamada_kawai_layout):
-    # Define the grid size
-    rows, cols = 3, 6  # Adjust based on the number of graphs
-    fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
-    axes = axes.flatten()  # Flatten to iterate easily
-    
-    for ax, (snapshot, graph) in zip(axes, graphs.items()):
-        # Relabel nodes with symbols using the mapping
-        relabeled_graph = nx.relabel_nodes(graph, address_to_symbol)
-        
-        # Compute layout
-        pos = layout(relabeled_graph)  
-        
-        # Draw the graph with relabeled nodes
-        nx.draw(relabeled_graph, pos, ax=ax, with_labels=False, node_size=50, node_color='skyblue', edge_color='gray', font_size=8)
-        ax.set_title(dates[snapshot], fontsize=10)
-        ax.set_axis_off()  # Hide axis for clarity
-        
-        # Draw a rectangle around the plot area
-        rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='black', facecolor='none', transform=ax.transAxes, clip_on=False)
-        ax.add_patch(rect)
-
-    # Turn off any unused subplots
-    for i in range(len(graphs), len(axes)):
-        axes[i].set_axis_off()
-    
-    # Adjust layout to prevent overlap
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.9)  # Adjust the top spacing to accommodate title if necessary
-    
-    # Save the figure
-    fig.suptitle('Validated Wallet Projections Over Time', fontsize=16)
-    plt.savefig(os.path.join(output_directory, "wallet_projection_grid.png"), format='png', dpi=300)
-    plt.show()
     
 
 def plot_similarity_heatmap(similarity_matrix, snapshot_list, dates, output_directory):

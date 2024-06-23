@@ -75,7 +75,7 @@ class CliqueAnalysis:
         print(f"Sample: {len(normalised_pct_supply)} || Control: {len(normalised_pct_supplyC)}")
 
         total_influence = normalised_pct_supply.sum()
-        total_influence_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, alternative='greater')
+        total_influence_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, method='mean', alternative='greater')
 
         self.analysis_result['total_influence'] = total_influence
         self.analysis_result_control['total_influence'] = normalised_pct_supplyC.sum()
@@ -83,7 +83,7 @@ class CliqueAnalysis:
 
         gini_total_influence = gini(normalised_pct_supply)
         gini_total_influenceC = gini(normalised_pct_supplyC)
-        gini_total_influence_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, alternative="lower")
+        gini_total_influence_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, method='gini', alternative="lower")
 
         self.analysis_result['gini_total_influence'] = gini_total_influence
         self.analysis_result_control['gini_total_influence'] = gini_total_influenceC
@@ -95,7 +95,7 @@ class CliqueAnalysis:
         normalised_pct_supply_internalC = self.sub_df_control[self.sub_df_control.token_address.isin(self.clique)].pct_supply / no_token_communities_in_clique
 
         internal_influence = normalised_pct_supply_internal.sum()
-        internal_influence_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, alternative='greater')
+        internal_influence_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='mean', alternative='greater')
 
         self.analysis_result['internal_influence'] = internal_influence
         self.analysis_result_control['internal_influence'] = normalised_pct_supply_internalC.sum()
@@ -103,7 +103,7 @@ class CliqueAnalysis:
 
         gini_internal_influence = gini(normalised_pct_supply_internal)
         gini_internal_influenceC = gini(normalised_pct_supply_internalC)
-        gini_internal_influence_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, alternative="lower")
+        gini_internal_influence_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='gini', alternative="lower")
 
         self.analysis_result['gini_internal_influence'] = gini_internal_influence
         self.analysis_result_control['gini_internal_influence'] = gini_internal_influenceC
@@ -118,7 +118,7 @@ class CliqueAnalysis:
         normalised_pct_supply_externalC = self.sub_df_control[~self.sub_df_control.token_address.isin(self.clique)].pct_supply / no_token_communities_not_in_clique
 
         external_influence = normalised_pct_supply_external.sum()
-        external_influence_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, alternative='greater')
+        external_influence_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='mean', alternative='greater')
 
         self.analysis_result['external_influence'] = external_influence
         # self.analysis_result_control['external_influence'] = normalised_pct_supply_externalC.sum()
@@ -126,7 +126,7 @@ class CliqueAnalysis:
 
         gini_external_influence = gini(normalised_pct_supply_external)
         # gini_external_influenceC = gini(normalised_pct_supply_externalC)
-        gini_external_influence_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, alternative="lower")
+        gini_external_influence_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='gini', alternative="lower")
 
         self.analysis_result['gini_external_influence'] = gini_external_influence
         # self.analysis_result_control['gini_external_influence'] = gini_external_influenceC
@@ -140,7 +140,7 @@ class CliqueAnalysis:
 
     def _calculate_wealth_clique(self):
         wealth_clique = self.sub_df['value_usd'].sum()
-        total_wealth_pval = permutation_test(self.sub_df['value_usd'], self.sub_df_control['value_usd'], alternative='greater')
+        total_wealth_pval = permutation_test(self.sub_df['value_usd'], self.sub_df_control['value_usd'], method='median', alternative='greater')
 
         self.analysis_result['wealth_clique'] = wealth_clique
         self.analysis_result_control['wealth_clique'] = self.sub_df_control['value_usd'].sum()
@@ -149,7 +149,7 @@ class CliqueAnalysis:
     def _calculate_gini_wealth_clique(self):
         gini_wealth_clique = gini(self.sub_df['value_usd'])
         gini_wealth_cliqueC = gini(self.sub_df_control['value_usd'])
-        gini_wealth_clique_pval =permutation_test(self.sub_df['value_usd'], self.sub_df_control['value_usd'], alternative="lower")
+        gini_wealth_clique_pval =permutation_test(self.sub_df['value_usd'], self.sub_df_control['value_usd'], method='gini', alternative="lower")
 
         self.analysis_result['gini_wealth_clique'] = gini_wealth_clique
         self.analysis_result_control['gini_wealth_clique'] = gini_wealth_cliqueC
@@ -158,7 +158,7 @@ class CliqueAnalysis:
     def _calculate_median_wealth_level(self):
         median_wealth_level_clique = self.sub_df.groupby('address')['value_usd'].sum().median()
         median_wealth_level_cliqueC = self.sub_df_control.groupby('address')['value_usd'].sum().median()
-        median_wealth_level_clique_pval = permutation_test(self.sub_df.groupby('address')['value_usd'].sum(), self.sub_df_control.groupby('address')['value_usd'].sum(), alternative='greater')
+        median_wealth_level_clique_pval = permutation_test(self.sub_df.groupby('address')['value_usd'].sum(), self.sub_df_control.groupby('address')['value_usd'].sum(), method='median', alternative='greater')
 
         self.analysis_result['median_wealth_level_clique'] = median_wealth_level_clique
         self.analysis_result_control['median_wealth_level_clique'] = median_wealth_level_cliqueC
@@ -167,7 +167,7 @@ class CliqueAnalysis:
     def _calculate_median_no_assets(self):
         median_no_assets_clique = self.sub_df.groupby('address')['token_address'].count().median()
         median_no_assets_cliqueC = self.sub_df_control.groupby('address')['token_address'].count().median()
-        median_no_assets_clique_pval = permutation_test(self.sub_df.groupby('address')['token_address'].count(), self.sub_df_control.groupby('address')['token_address'].count(), alternative='greater')
+        median_no_assets_clique_pval = permutation_test(self.sub_df.groupby('address')['token_address'].count(), self.sub_df_control.groupby('address')['token_address'].count(),method='median', alternative='greater')
 
         self.analysis_result['median_no_assets_clique'] = median_no_assets_clique
         self.analysis_result_control['median_no_assets_clique'] = median_no_assets_cliqueC
