@@ -66,7 +66,7 @@ def cliques_main():
         ddf = ddf[~ddf.address.isin(known_burner_addresses)]
         
         # Only include wallets holding more than 0.000005 ~ 0.0005% of supply 
-        ddf = ddf[ddf.pct_supply > 0.000005]
+        # ddf = ddf[ddf.pct_supply > 0.000005]
         
         # Assign token prices 
         ddf['token_price_usd'] = ddf['token_address'].apply(lambda x: df_token_price.loc[str(x), str(snapshot_block_height)])
@@ -93,21 +93,27 @@ def cliques_main():
             cliques_pvalues_directional = {}
 
             for clique in all_cliques:
+                print(clique)
                 if filter_method == 'upper_bound':
                     clique_members_unique = clique_member_wallets_weak(clique, ddf)
                 else:
                     clique_members_unique = clique_member_wallets_strong(clique, ddf)
 
                 if not clique_members_unique:
-                    print("Skip")
+                    print("Skip") # Happend due to strict filtering criteria
                     continue
 
+                # print(f"Clique Size: {len(clique_members_unique)}, {len(set(clique_members_unique))}")
                 ddf_sub = ddf[ddf.address.isin(clique_members_unique)].copy()
                 filter1 = ddf.token_address.isin(clique)
-                filter2 = ddf['address'].isin(clique_members_unique)
-                relevant_population = list(ddf[(filter1 == True) & (filter2 != True)].address.unique())
-                control_sample = random.sample(relevant_population, len(clique_members_unique))
-                ddf_sub_control = ddf[ddf.address.isin(control_sample)].copy()
+                # filter2 = ddf['address'].isin(clique_members_unique)
+                relevant_population = list(ddf[(filter1 == True)].address.unique())
+                # control_sample = random.sample(relevant_population, len(clique_members_unique))
+                # print(f"Population Size: {len(relevant_population)}, {len(set(relevant_population))}")
+
+                ddf_sub_control = ddf[ddf.address.isin(relevant_population)].copy()
+
+                # print(f"DataFrame Shapes - CDW: {ddf_sub.shape} || Control: {ddf_sub_control.shape}")
 
                 analyzer = CliqueAnalysis(ddf_sub, ddf_sub_control, ddf, clique, token_lookup)
                 clique_name, results, results_control, pvalues = analyzer.analyze()
@@ -129,10 +135,11 @@ def cliques_main():
                     # Sample DataFrame - contains clique members but we only look at one token of a clique
                     ddf_sub_directional = ddf[filter1 & filter2].copy() 
 
-                    # Control Population are token members which are not part of identified clique members 
-                    relevant_population_directional = ddf[filter1 & ~filter2].address.unique()
+                    # Population is the Token Population
+                    relevant_population_directional = ddf[filter1].address.unique()
                     
                     clique_name = []
+
                     for t in clique: 
                         clique_name.append(token_lookup[t])
                     
@@ -140,7 +147,7 @@ def cliques_main():
                     
                     
                     # check directional analysis sufficiency 
-                    if len(relevant_population_directional) < len(clique_members_unique):
+                    if len(relevant_population_directional) < len(ddf_sub_directional):
                         
                         if token_name in list(insufficient_control_population.keys()):
                             
@@ -148,20 +155,19 @@ def cliques_main():
                             
                         else: 
                             insufficient_control_population[token_name] = [snapshot_block_height]
-                            # log 
                             
-                        log[f"{snapshot_block_height}-{snapshot_date}||{clique_name}:{token_name}"] = {
-                        "population_size_directional": len(relevant_population_directional),
-                        "sample_size_directional": len(clique_members_unique),
-                        "token_population": len(ddf[filter1]), 
-                        "filter_method": filter_method
-                        }
+                        # log[f"{snapshot_block_height}-{snapshot_date}||{clique_name}:{token_name}"] = {
+                        # "population_size_directional": len(relevant_population_directional),
+                        # "sample_size_directional": len(clique_members_unique),
+                        # "token_population": len(ddf[filter1]), 
+                        # "filter_method": filter_method
+                        # }
                         
-                        print(f"!!!! Skip directional analysis for {token_name} due to insufficient control population !!!!")
+                        print(f"[WARNING]: Skip directional analysis for {token_name} due to insufficient control population")
                         continue
                                               
-                    control_directional = random.sample(list(relevant_population_directional), len(clique_members_unique))
-                    ddf_control_directional = ddf[ddf.address.isin(control_directional)].copy()
+                    # control_directional = random.sample(list(relevant_population_directional), len(clique_members_unique))
+                    ddf_control_directional = ddf[ddf.address.isin(relevant_population_directional)].copy()
 
                     # update analzyer to directional 
                     analyzer_directional = CliqueAnalysis(ddf_sub_directional, ddf_control_directional, ddf, clique, token_lookup)
@@ -180,10 +186,10 @@ def cliques_main():
             cliques[filter_method]['control_directional'][snapshot_date] = cliques_snapshot_control_directional
             cliques[filter_method]['pvalues_directional'][snapshot_date] = cliques_pvalues_directional
 
-    return cliques, insufficient_control_population, log
+    return cliques, insufficient_control_population
 
 if __name__ == "__main__":
-    cliques, insufficient_control_population, log = cliques_main()
+    cliques, insufficient_control_population = cliques_main()
     output_path = join(path, 'data/cliques_data_class.pkl')
 
     with open(output_path, 'wb') as handle:

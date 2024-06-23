@@ -55,43 +55,103 @@ def gini(array):
     return gini_coefficient
 
 
+def permutation_test(cdw_sample, full_sample, method='mean', alternative='greater', num_permutations=1000, min_sample_size=30):
+    if len(full_sample) < min_sample_size or len(cdw_sample) < min_sample_size:
+        return 1.0  # non-significant due to small sample size
 
-def permutation_test(full_sample, cdw_sample, num_permutations=1000):
     n_cdw = len(cdw_sample)
-    full_mean = np.mean(full_sample)
-    cdw_mean = np.mean(cdw_sample)
     
-    # Calculate observed test statistic M_CDW
-    M_CDW = cdw_mean - full_mean
+    # Calculate observed statistic
+    if method == 'mean':
+        observed_stat_cdw = np.mean(cdw_sample)
+        observed_stat_full = np.mean(full_sample)
+    elif method == 'median':
+        observed_stat_cdw = np.median(cdw_sample)
+        observed_stat_full = np.median(full_sample)
+    elif method == 'gini':
+        observed_stat_cdw = gini(cdw_sample)
+        observed_stat_full = gini(full_sample)
+    else:
+        raise ValueError("Method must be 'mean', 'median', or 'gini'")
+
+    observed_diff = observed_stat_cdw - observed_stat_full
     
-    # Generate permutation samples and calculate M_k
-    M_k_values = []
+    # Generate permutation samples and calculate statistic differences
+    combined_sample = np.concatenate([cdw_sample, full_sample])
+    perm_diffs = []
     for _ in range(num_permutations):
-        perm_sample = np.random.choice(full_sample, size=n_cdw, replace=False)
-        perm_mean = np.mean(perm_sample)
-        M_k = perm_mean - full_mean
-        M_k_values.append(M_k)
+        np.random.shuffle(combined_sample)
+        perm_cdw = combined_sample[:n_cdw]
+        perm_full = combined_sample[n_cdw:]
+        
+        if method == 'mean':
+            perm_stat_cdw = np.mean(perm_cdw)
+            perm_stat_full = np.mean(perm_full)
+        elif method == 'median':
+            perm_stat_cdw = np.median(perm_cdw)
+            perm_stat_full = np.median(perm_full)
+        elif method == 'gini':
+            perm_stat_cdw = gini(perm_cdw)
+            perm_stat_full = gini(perm_full)
+        
+        perm_diff = perm_stat_cdw - perm_stat_full
+        perm_diffs.append(perm_diff)
     
-    # Convert M_k_values to a numpy array for easier quantile calculation
-    M_k_values = np.array(M_k_values)
+    perm_diffs = np.array(perm_diffs)
     
-    # Calculate the 95th percentile of the permutation test statistics
-    threshold = np.percentile(M_k_values, 95)
+    if alternative == 'greater':
+        # Calculate p-value for greater alternative
+        p_value = np.mean(perm_diffs >= observed_diff)
+    elif alternative == 'lower':
+        # Calculate p-value for less alternative
+        p_value = np.mean(perm_diffs <= observed_diff)
+    else:
+        raise ValueError("Alternative hypothesis must be 'greater' or 'less'")
     
-    # Calculate p-value as the proportion of M_k values greater than or equal to M_CDW
-    p_value = np.mean(M_k_values >= M_CDW)
-    
-    return M_CDW, threshold, p_value
+    return p_value
 
-# # Example usage
-# full_sample = np.random.normal(loc=10, scale=2, size=1000)  # All token holders
-# cdw_sample = np.random.normal(loc=12, scale=2, size=30)    # CDW token holders
 
-# # Perform the permutation test
-# M_CDW, threshold, p_value = permutation_test(full_sample, cdw_sample)
-# print(f"Observed M_CDW: {M_CDW}")
-# print(f"95th percentile threshold: {threshold}")
-# print(f"P-value: {p_value}")
+
+
+# def permutation_test(cdw_sample, full_sample, alternative='greater', num_permutations=1000):
+
+#     if len(full_sample) < 30 or len(cdw_sample) < 30 : 
+#         # @TO_DO: Sample size of 30 generally is considered adequate to ensure sufficient power
+#         # more refined methods can be implemented here such as exact test if the sample size is 
+#         # smaller. 
+
+#         return 1.0 # non significant
+
+
+#     n_cdw = len(cdw_sample)
+#     full_mean = np.mean(full_sample)
+#     cdw_mean = np.mean(cdw_sample)
+    
+#     # Calculate observed test statistic M_CDW
+#     M_CDW = cdw_mean - full_mean
+    
+#     # Generate permutation samples and calculate M_k
+#     M_k_values = []
+#     for _ in range(num_permutations):
+#         perm_sample = np.random.choice(full_sample, size=n_cdw, replace=False)
+#         perm_mean = np.mean(perm_sample)
+#         M_k = perm_mean - full_mean
+#         M_k_values.append(M_k)
+    
+#     # Convert M_k_values to a numpy array for easier calculation
+#     M_k_values = np.array(M_k_values)
+    
+#     if alternative == 'greater':
+#         # Calculate p-value for greater alternative
+#         p_value = np.mean(M_k_values >= M_CDW)
+#     elif alternative == 'lower':
+#         # Calculate p-value for less alternative
+#         p_value = np.mean(M_k_values <= M_CDW)
+#     else:
+#         raise ValueError("Alternative hypothesis must be 'greater' or 'less'")
+    
+#     return p_value
+
 
 
 
