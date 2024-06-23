@@ -185,7 +185,7 @@ class LinkAnalysis:
             supply (pd.Series): The supply data.
             supply_control (pd.Series): The control supply data.
         """
-        influence_pval = t_test(supply, supply_control, alternative='greater')
+        influence_pval = permutation_test(supply, supply_control, method='mean', alternative='greater')
 
         self.analysis_result[metric_name] = supply.sum()
         self.analysis_result_control[metric_name] = supply_control.sum()
@@ -202,7 +202,7 @@ class LinkAnalysis:
         """
         gini_value = gini(supply)
         gini_value_control = gini(supply_control)
-        gini_pval = one_tailed_gini_t_test(supply, supply_control, alpha=0.05, direction="lower")
+        gini_pval = permutation_test(supply, supply_control, method='gini', alternative="lower")
 
         self.analysis_result[metric_name] = gini_value
         self.analysis_result_control[metric_name] = gini_value_control
@@ -213,7 +213,7 @@ class LinkAnalysis:
         Analyzes wealth distribution within the link.
         """
         wealth_link = self.sub_dataFrame['value_usd'].sum()
-        total_wealth_pval = t_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], alternative='greater')
+        total_wealth_pval = permutation_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], method='mean', alternative='greater')
 
         self.analysis_result['wealth_link'] = wealth_link
         self.analysis_result_control['wealth_link'] = self.sub_dataFrame_control['value_usd'].sum()
@@ -221,7 +221,7 @@ class LinkAnalysis:
 
         gini_wealth_link = gini(self.sub_dataFrame['value_usd'])
         gini_wealth_linkC = gini(self.sub_dataFrame_control['value_usd'])
-        gini_wealth_link_pval = one_tailed_gini_t_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], alpha=0.05, direction="lower")
+        gini_wealth_link_pval = permutation_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], method='gini', alternative="lower")
 
         self.analysis_result['gini_wealth_link'] = gini_wealth_link
         self.analysis_result_control['gini_wealth_link'] = gini_wealth_linkC
@@ -229,7 +229,7 @@ class LinkAnalysis:
 
         median_wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum().median()
         median_wealth_level_linkC = self.sub_dataFrame_control.groupby('address')['value_usd'].sum().median()
-        median_wealth_level_link_pval = median_t_test(self.sub_dataFrame.groupby('address')['value_usd'].sum(), self.sub_dataFrame_control.groupby('address')['value_usd'].sum(), alternative='greater')
+        median_wealth_level_link_pval = permutation_test(self.sub_dataFrame.groupby('address')['value_usd'].sum(), self.sub_dataFrame_control.groupby('address')['value_usd'].sum(), method='median', alternative='greater')
 
         self.analysis_result['median_wealth_level_link'] = median_wealth_level_link
         self.analysis_result_control['median_wealth_level_link'] = median_wealth_level_linkC
@@ -237,7 +237,7 @@ class LinkAnalysis:
 
         median_no_assets_link = self.sub_dataFrame.groupby('address')['token_address'].count().median()
         median_no_assets_linkC = self.sub_dataFrame_control.groupby('address')['token_address'].count().median()
-        median_no_assets_link_pval = median_t_test(self.sub_dataFrame.groupby('address')['token_address'].count(), self.sub_dataFrame_control.groupby('address')['token_address'].count(), alternative='greater')
+        median_no_assets_link_pval = permutation_test(self.sub_dataFrame.groupby('address')['token_address'].count(), self.sub_dataFrame_control.groupby('address')['token_address'].count(), method='median', alternative='greater')
 
         self.analysis_result['median_no_assets_link'] = median_no_assets_link
         self.analysis_result_control['median_no_assets_link'] = median_no_assets_linkC
@@ -246,9 +246,10 @@ class LinkAnalysis:
     def _analyze_labels(self):
         """
         Analyzes labels associated with the link.
+
         """
-        self.sub_dataFrame.label.fillna('other_contracts', inplace=True)
-        self.sub_dataFrame_control.label.fillna('other_contracts', inplace=True)
+        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
+        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
 
         self._calculate_max_influence_label_distribution()
 

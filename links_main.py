@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import * 
-from src.analysis.link_analysis import LinkAnalysis
+from analysis.link_analysis import LinkAnalysis
 import pickle 
 
 load_dotenv()  
@@ -96,14 +96,14 @@ def links_main():
 
             # Control DataFrame
             filter1 = ddf.token_address.isin(link)
-            filter2 = ddf.address.isin(link_members_unique)
+            # filter2 = ddf.address.isin(link_members_unique)
             
             # Control Population are link token members which are not part of identified link members 
-            relevant_population = ddf[filter1 & ~filter2].address.unique()
+            relevant_population = ddf[filter1 ==True].address.unique()
             
             # Sample address without replacement 
-            control_sample = random.sample(list(relevant_population), len(link_members_unique))
-            ddf_sub_control = ddf[ddf.address.isin(control_sample)].copy()
+            # control_sample = random.sample(list(relevant_population), len(link_members_unique))
+            ddf_sub_control = ddf[ddf.address.isin(relevant_population)].copy()
             
             # Perform analysis
             analyzer.sub_dataFrame = ddf_sub
@@ -126,10 +126,10 @@ def links_main():
                 
                 # Control filters 
                 filter1 = ddf.token_address == token
-                filter2 = ddf.address.isin(link_members_unique)
+                # filter2 = ddf.address.isin(link_members_unique)
             
                 # Control Population are token members which are not part of identified link members 
-                relevant_population_directional = ddf[filter1 & ~filter2].address.unique()
+                relevant_population_directional = ddf[filter1 ==True].address.unique()
                 control_directional = random.sample(list(relevant_population_directional), len(link_members_unique))
                 ddf_control_directional = ddf[ddf.address.isin(control_directional)].copy()
                 
