@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import * 
-from analysis.link_analysis import LinkAnalysis
+from src.analysis.link_analysis import LinkAnalysis
 import pickle 
 
 load_dotenv()  
@@ -57,7 +57,7 @@ def links_main():
         ddf = ddf[~ddf.address.isin(known_burner_addresses)]
 
         # Only include wallets holding more than 0.000005 ~ 0.0005% of supply 
-        ddf = ddf[ddf.pct_supply > 0.000005] 
+        # ddf = ddf[ddf.pct_supply > 0.000005] 
 
         # Assign token prices
         ddf['token_price_usd'] = ddf['token_address'].apply(lambda x: df_token_price.loc[str(x), str(snapshot_block_height)])
@@ -91,19 +91,15 @@ def links_main():
                 print("Skip")
                 continue
 
-            # Sample DataFrame
-            ddf_sub = ddf[ddf.address.isin(link_members_unique)].copy()  
-
-            # Control DataFrame
+            # filter 
             filter1 = ddf.token_address.isin(link)
-            # filter2 = ddf.address.isin(link_members_unique)
-            
-            # Control Population are link token members which are not part of identified link members 
-            relevant_population = ddf[filter1 ==True].address.unique()
+            filter2 = ddf.address.isin(link_members_unique)
+
+            # Sample DataFrame
+            ddf_sub = ddf[filter2].copy()  
             
             # Sample address without replacement 
-            # control_sample = random.sample(list(relevant_population), len(link_members_unique))
-            ddf_sub_control = ddf[ddf.address.isin(relevant_population)].copy()
+            ddf_sub_control = ddf[filter1].copy()
             
             # Perform analysis
             analyzer.sub_dataFrame = ddf_sub
@@ -115,29 +111,27 @@ def links_main():
             links_pvalues[str(link_name)] = pvalues
             
             
-            # Control DataFrame Directional            
+            # Directional            
             for token in link: 
+
+                # filter 
+                filter1 = ddf.token_address == token
+                filter2 = ddf.address.isin(link_members_unique)
                 
                 # Sample DataFrame - contains clique members but we only look at one token of a link
-                ddf_sub_directional = ddf[(ddf.address.isin(link_members_unique)) & (ddf.token_address == token)].copy() 
+                ddf_sub_directional = ddf[filter2 & filter1].copy() 
                 
                 # For naming convention
                 token_name = token_lookup[token]
                 
-                # Control filters 
-                filter1 = ddf.token_address == token
-                # filter2 = ddf.address.isin(link_members_unique)
-            
-                # Control Population are token members which are not part of identified link members 
-                relevant_population_directional = ddf[filter1 ==True].address.unique()
-                control_directional = random.sample(list(relevant_population_directional), len(link_members_unique))
-                ddf_control_directional = ddf[ddf.address.isin(control_directional)].copy()
+                # Sample Control Population are token members which are not part of identified link members 
+                ddf_control_directional = ddf[filter1].copy() 
                 
                 # update analzyer to directional 
-                analyzer_directional = LinkAnalysis(link, ddf, None, None, token_lookup)
-                analyzer_directional.directional = True 
-                analyzer_directional.sub_dataFrame = ddf_sub_directional
-                analyzer_directional.sub_dataFrame_control = ddf_control_directional
+                analyzer_directional = LinkAnalysis(link, ddf,  ddf_sub_directional, ddf_control_directional, token_lookup)
+
+                # set directional to False 
+                analyzer_directional.directional = True
                 link_name, results, results_control, pvalues = analyzer_directional.analyze_link()
                 
                 links_snapshot_directional[f'{link_name}: {token_name}'] = results

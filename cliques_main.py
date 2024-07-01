@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import *
 # from src.analysis.clique_analysis import CliqueAnalysis, clique_member_wallets_weak, clique_member_wallets_strong
-from analysis.clique_analysis import CliqueAnalysis, clique_member_wallets_weak, clique_member_wallets_strong
+from src.analysis.clique_analysis import CliqueAnalysis, clique_member_wallets_weak, clique_member_wallets_strong
 
 load_dotenv()
 
