@@ -1,7 +1,5 @@
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import networkx as nx
+
 
 def jaccard_similarity(g1, g2):
     """
@@ -113,47 +111,6 @@ def permutation_test(cdw_sample, full_sample, method='mean', alternative='greate
 
 
 
-# def permutation_test(cdw_sample, full_sample, alternative='greater', num_permutations=1000):
-
-#     if len(full_sample) < 30 or len(cdw_sample) < 30 : 
-#         # @TO_DO: Sample size of 30 generally is considered adequate to ensure sufficient power
-#         # more refined methods can be implemented here such as exact test if the sample size is 
-#         # smaller. 
-
-#         return 1.0 # non significant
-
-
-#     n_cdw = len(cdw_sample)
-#     full_mean = np.mean(full_sample)
-#     cdw_mean = np.mean(cdw_sample)
-    
-#     # Calculate observed test statistic M_CDW
-#     M_CDW = cdw_mean - full_mean
-    
-#     # Generate permutation samples and calculate M_k
-#     M_k_values = []
-#     for _ in range(num_permutations):
-#         perm_sample = np.random.choice(full_sample, size=n_cdw, replace=False)
-#         perm_mean = np.mean(perm_sample)
-#         M_k = perm_mean - full_mean
-#         M_k_values.append(M_k)
-    
-#     # Convert M_k_values to a numpy array for easier calculation
-#     M_k_values = np.array(M_k_values)
-    
-#     if alternative == 'greater':
-#         # Calculate p-value for greater alternative
-#         p_value = np.mean(M_k_values >= M_CDW)
-#     elif alternative == 'lower':
-#         # Calculate p-value for less alternative
-#         p_value = np.mean(M_k_values <= M_CDW)
-#     else:
-#         raise ValueError("Alternative hypothesis must be 'greater' or 'less'")
-    
-#     return p_value
-
-
-
 
 import numpy as np
 import scipy.stats as stats
@@ -196,73 +153,11 @@ def t_test(sample_data, control_data, alternative='greater'):
         t_statistic, p_value = stats.ttest_ind(sample_data, control_data, equal_var=True, alternative=alternative)
 
     return p_value
-
-
-# def t_test(sample_data, control_data, alternative='greater'): 
     
-#     # Test applicability of t-test
-    
-#     ### Independence: The data in both groups should be independent of each other. - True 
-    
-#     if len(sample_data) < 15 or len(control_data) < 15: 
-#         print('Insufficient Sample Size to ensure statistical validitiy of t-test') 
-#         return 1
-    
-#     elif len(sample_data) < 30 or len(control_data) < 30: 
-#     # Only test if sufficiently large sample size (typically greater than 30-40 observations per group) 
-#     # the central limit theorem often comes into play.
-    
-#         ### Normality: The data in each group should follow a roughly normal distribution.
-#         _, p_value = stats.shapiro(sample_data)
-#         _, p_value_control = stats.shapiro(control_data)
-
-#         if p_value < 0.05 or p_value_control < 0.05: 
-
-#             print(f"Significantly deviates from a normal distribution: Sample: {p_value} || Control: {p_value_control}") 
-#             return 1
-
-#         ### Homogeneity of Variances: The variances in both groups should be approximately equal. You can check this using statistical tests like Levene's test or by visual inspection of boxplots.
-#         _, p_value = stats.levene(sample_data, control_data)
-
-#         if p_value < 0.05: 
-
-#             print(f"The variances are not approximately equal: Sample: {p_value} || Control: {p_value_control}") 
-#             # Perform the  Welch’s t-test
-#             _, p_value = stats.ttest_ind(sample_data, control_data, equal_var=False,  alternative=alternative)
-#         else: 
-#              _, p_value = stats.ttest_ind(sample_data, control_data, equal_var=True,  alternative=alternative)
-
-
-#     return p_value
 
 
 
 
-# import scipy.stats as stats
-
-# def median_t_test(group1_data, group2_data, alternative='greater'):
-#     """
-#     Perform a Mann-Whitney U test (t-test for the median) to compare medians between two groups.
-
-#     Parameters:
-#     - group1_data: List or array containing data for the first group.
-#     - group2_data: List or array containing data for the second group.
-#     - alpha: Significance level (default is 0.05).
-
-#     Returns:
-#     - u_statistic: The Mann-Whitney U statistic.
-#     - p_value: The two-tailed p-value for the test.
-#     - significant: A boolean indicating whether the difference is statistically significant.
-#     """
-#     # Check for sufficient variability within each group
-#     if len(np.unique(group1_data)) < 2 or len(np.unique(group2_data)) < 2:
-#         print('Insufficient variability within one or both groups for Mann-Whitney U test.')
-#         return 1
-    
-#     # Perform Mann-Whitney U test
-#     _, p_value = stats.mannwhitneyu(group1_data, group2_data, alternative=alternative)
-
-#     return p_value
 
 
 

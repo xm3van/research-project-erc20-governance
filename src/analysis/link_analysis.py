@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
 import pickle
-from os.path import join
-from itertools import combinations
 from src.utilities.metrics_and_tests import *
 from src.utilities.utils import *
 
@@ -78,44 +76,55 @@ class LinkData:
 
 class LinkAnalysis:
     """
-    Class to perform analysis on link data.
+    Class for conducting analysis on link data, focusing on metrics related to influence and wealth distribution.
 
     Attributes:
-        link (list): List of token addresses in the link.
-        dataFrame (pd.DataFrame): The main DataFrame containing token data.
-        sub_dataFrame (pd.DataFrame): Subset of the main DataFrame for the link.
-        sub_dataFrame_control (pd.DataFrame): Control subset of the DataFrame.
-        token_lookup (dict): Dictionary for token address to token name mapping.
-        analysis_result (dict): Dictionary to store analysis results.
-        analysis_result_control (dict): Dictionary to store control analysis results.
-        pvalues (dict): Dictionary to store p-values of the statistical tests.
+        link (list): A list of token addresses in the link.
+        dataFrame (pd.DataFrame): The primary DataFrame containing token data.
+        sub_dataFrame (pd.DataFrame): A subset of the main DataFrame specific to the link.
+        sub_dataFrame_sample_population (pd.DataFrame): A control subset of the DataFrame for comparison.
+        token_lookup (dict): A dictionary for mapping token addresses to token names.
+        analysis_result (dict): A dictionary to store the results of the analysis.
+        analysis_result_sample_population (dict): A dictionary to store the results of the sample population analysis.
+        pvalues (dict): A dictionary to store p-values of the statistical tests.
 
     Methods:
         link_member_wallets(): Retrieves unique wallet addresses that hold all tokens in the provided link.
         analyze_link(): Analyzes the characteristics of the link.
-        _analyze_descriptive_metrics(): Analyzes descriptive metrics of the link.
-        _analyze_influence_metrics(): Analyzes influence metrics of the link.
-        _calculate_influence(metric_name, supply, supply_control): Calculates and stores influence metrics.
-        _calculate_gini(metric_name, supply, supply_control): Calculates and stores Gini coefficients.
-        _analyze_wealth_distribution(): Analyzes wealth distribution within the link.
-        _analyze_labels(): Analyzes labels associated with the link.
-        _calculate_max_influence_label(): Calculates the label with the maximum influence.
+        _calculate_link_size(): Computes the size of the link.
+        _calculate_token_holding_count(): Computes the median number of assets held by link-defining addresses.
+        _analyze_labels(): Analyzes the labels associated with the link.
+        _calculate_total_influence(): Computes the total influence of the link.
+        _calculate_gini_of_total_influence(): Computes the Gini coefficient for the total influence.
+        _calculate_median_influence(): Computes the median influence level within the link.
+        _calculate_internal_influence(): Computes the internal influence of the link.
+        _calculate_gini_of_internal_influence(): Computes the Gini coefficient for the internal influence.
+        _calculate_external_influence(): Computes the external influence of the link.
+        _calculate_gini_of_external_influence(): Computes the Gini coefficient for the external influence.
+        _calculate_total_influence_directional(): Computes the directional total influence of the link.
+        _calculate_total_link_wealth(): Computes the total wealth within the link.
+        _calculate_gini_of_total_link_wealth(): Computes the Gini coefficient for the total wealth within the link.
+        _calculate_median_wealth(): Computes the median wealth level within the link.
+        _calculate_internal_wealth(): Computes the internal wealth of the link.
+        _calculate_gini_of_internal_wealth(): Computes the Gini coefficient for the internal wealth.
+        _calculate_external_wealth(): Computes the external wealth of the link.
+        _calculate_gini_of_external_wealth(): Computes the Gini coefficient for the external wealth.
     """
 
-    def __init__(self, link, dataFrame, sub_dataFrame, sub_dataFrame_control, token_lookup):
+    def __init__(self, link, dataFrame, sub_dataFrame, sub_dataFrame_sample_population, token_lookup):
         self.link = link
         self.dataFrame = dataFrame
         self.sub_dataFrame = sub_dataFrame
-        self.sub_dataFrame_control = sub_dataFrame_control
+        self.sub_dataFrame_sample_population = sub_dataFrame_sample_population
         self.token_lookup = token_lookup
         self.directional = False
         self.analysis_result = {}
-        self.analysis_result_control = {}
+        self.analysis_result_sample_population = {}
         self.pvalues = {}
 
     def link_member_wallets(self):
         """
-        Retrieve unique wallet addresses that hold ALL tokens in the provided link.
+        Retrieves unique wallet addresses that hold all tokens in the provided link.
 
         Returns:
             list: A list of unique wallet addresses.
@@ -130,149 +139,290 @@ class LinkAnalysis:
 
     def analyze_link(self):
         """
-        Analyze the characteristics of a link of wallets within a given DataFrame.
+        Analyzes the characteristics of the link within a given DataFrame.
 
         Returns:
-            tuple: Contains the token names, analysis results, control analysis results, and p-values.
+            tuple: Contains the token names, analysis results, sample population analysis results, and p-values.
         """
-        self._analyze_descriptive_metrics()
-        self._analyze_influence_metrics()
-        self._analyze_wealth_distribution()
-        self._analyze_labels()
-        return [self.token_lookup[i] for i in self.link], self.analysis_result, self.analysis_result_control, self.pvalues
+        if self.directional == False:
+            # Descriptive metrics
+            self._calculate_size()
+            self._calculate_median_token_holding_count()
+            self._analyze_labels()
 
-    def _analyze_descriptive_metrics(self):
+            # Influence metrics
+            ## Total Influence
+            self._calculate_total_influence()
+            self._calculate_gini_of_total_influence()
+            self._calculate_median_influence()
+            ## internal influence 
+            self._calculate_internal_influence()
+            self._calculate_gini_of_internal_influence()
+            ## external influence 
+            self._calculate_external_influence()
+            self._calculate_gini_of_external_influence()
+
+            # Wealth metrics
+            ## Total wealth
+            self._calculate_total_wealth()
+            self._calculate_gini_of_total_wealth()
+            self._calculate_median_wealth()
+
+            ## Internal wealth
+            self._calculate_internal_wealth()
+            self._calculate_gini_of_internal_wealth()
+
+            ## External Wealth
+            self._calculate_external_wealth()
+            self._calculate_gini_of_external_wealth()
+
+            # Labels
+            self._analyze_labels()
+
+        elif self.directional == True:
+            # Descriptive metrics
+            self._calculate_size()
+            self._calculate_median_token_holding_count()
+            self._analyze_labels()
+
+            # Influence metrics
+            self._calculate_total_influence_directional()
+            self._calculate_gini_of_total_influence()
+
+            # Wealth metrics
+            self._calculate_total_wealth()
+            self._calculate_gini_of_total_wealth()
+            self._calculate_median_wealth()
+
+        return [self.token_lookup[i] for i in self.link], self.analysis_result, self.analysis_result_sample_population, self.pvalues
+
+    ###############################
+    ### Descriptive Metrics #######
+    ###############################
+
+    def _calculate_size(self):
         """
-        Analyzes descriptive metrics of the link.
+        Computes the size of the link.
         """
-        self.analysis_result['size_link'] = self.sub_dataFrame.address.nunique()
-        self.analysis_result_control['size_link'] = self.sub_dataFrame_control.address.nunique()
+        self.analysis_result['size'] = self.sub_dataFrame.address.nunique()
+        self.analysis_result_sample_population['size'] = self.sub_dataFrame_sample_population.address.nunique()
 
-    def _analyze_influence_metrics(self):
+    def _calculate_median_token_holding_count(self):
         """
-        Analyzes influence metrics of the link.
+        Computes the median number of assets held by link-defining addresses within a link.
         """
-        
-        # total influence 
-        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
+        median_no_assets_link = self.sub_dataFrame.groupby('address')['token_address'].count()
+        median_no_assets_linkC = self.sub_dataFrame_sample_population.groupby('address')['token_address'].count()
+        median_no_assets_link_pval = permutation_test(median_no_assets_link, median_no_assets_linkC, method='median', alternative='greater')
 
-        normalised_pct_supply = self.sub_dataFrame.pct_supply / no_token_communities_snapshot
-        normalised_pct_supplyC = self.sub_dataFrame_control.pct_supply / no_token_communities_snapshot
-
-        self._calculate_influence('total_influence', normalised_pct_supply, normalised_pct_supplyC)
-        self._calculate_gini('gini_total_influence', normalised_pct_supply, normalised_pct_supplyC)
-
-        # internal influence
-        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].pct_supply / len(self.link)
-        normalised_pct_supply_internalC = self.sub_dataFrame_control[self.sub_dataFrame_control.token_address.isin(self.link)].pct_supply / len(self.link)
-
-        self._calculate_influence('internal_influence', normalised_pct_supply_internal, normalised_pct_supply_internalC)
-        self._calculate_gini('gini_internal_influence', normalised_pct_supply_internal, normalised_pct_supply_internalC)
-        
-        # external influence 
-        normalised_pct_supply_external = self.sub_dataFrame[~self.sub_dataFrame.token_address.isin(self.link)].pct_supply / (no_token_communities_snapshot - len(self.link))
-        normalised_pct_supply_externalC = self.sub_dataFrame_control[~self.sub_dataFrame_control.token_address.isin(self.link)].pct_supply / (no_token_communities_snapshot - len(self.link))
-
-        self._calculate_influence('external_influence', normalised_pct_supply_external, normalised_pct_supply_externalC)
-        self._calculate_gini('gini_external_influence', normalised_pct_supply_external, normalised_pct_supply_externalC)
-
-    def _calculate_influence(self, metric_name, supply, supply_control):
-        """
-        Calculates and stores influence metrics.
-
-        Args:
-            metric_name (str): The name of the metric.
-            supply (pd.Series): The supply data.
-            supply_control (pd.Series): The control supply data.
-        """
-        influence_pval = t_test(supply, supply_control, alternative='greater')
-
-        self.analysis_result[metric_name] = supply.sum()
-        self.analysis_result_control[metric_name] = supply_control.sum()
-        self.pvalues[metric_name] = influence_pval
-
-    def _calculate_gini(self, metric_name, supply, supply_control):
-        """
-        Calculates and stores Gini coefficients.
-
-        Args:
-            metric_name (str): The name of the metric.
-            supply (pd.Series): The supply data.
-            supply_control (pd.Series): The control supply data.
-        """
-        gini_value = gini(supply)
-        gini_value_control = gini(supply_control)
-        gini_pval = one_tailed_gini_t_test(supply, supply_control, alpha=0.05, direction="lower")
-
-        self.analysis_result[metric_name] = gini_value
-        self.analysis_result_control[metric_name] = gini_value_control
-        self.pvalues[metric_name] = gini_pval
-
-    def _analyze_wealth_distribution(self):
-        """
-        Analyzes wealth distribution within the link.
-        """
-        wealth_link = self.sub_dataFrame['value_usd'].sum()
-        total_wealth_pval = t_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], alternative='greater')
-
-        self.analysis_result['wealth_link'] = wealth_link
-        self.analysis_result_control['wealth_link'] = self.sub_dataFrame_control['value_usd'].sum()
-        self.pvalues['wealth_link'] = total_wealth_pval
-
-        gini_wealth_link = gini(self.sub_dataFrame['value_usd'])
-        gini_wealth_linkC = gini(self.sub_dataFrame_control['value_usd'])
-        gini_wealth_link_pval = one_tailed_gini_t_test(self.sub_dataFrame['value_usd'], self.sub_dataFrame_control['value_usd'], alpha=0.05, direction="lower")
-
-        self.analysis_result['gini_wealth_link'] = gini_wealth_link
-        self.analysis_result_control['gini_wealth_link'] = gini_wealth_linkC
-        self.pvalues['gini_wealth_link'] = gini_wealth_link_pval
-
-        median_wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum().median()
-        median_wealth_level_linkC = self.sub_dataFrame_control.groupby('address')['value_usd'].sum().median()
-        median_wealth_level_link_pval = median_t_test(self.sub_dataFrame.groupby('address')['value_usd'].sum(), self.sub_dataFrame_control.groupby('address')['value_usd'].sum(), alternative='greater')
-
-        self.analysis_result['median_wealth_level_link'] = median_wealth_level_link
-        self.analysis_result_control['median_wealth_level_link'] = median_wealth_level_linkC
-        self.pvalues['median_wealth_level_link'] = median_wealth_level_link_pval
-
-        median_no_assets_link = self.sub_dataFrame.groupby('address')['token_address'].count().median()
-        median_no_assets_linkC = self.sub_dataFrame_control.groupby('address')['token_address'].count().median()
-        median_no_assets_link_pval = median_t_test(self.sub_dataFrame.groupby('address')['token_address'].count(), self.sub_dataFrame_control.groupby('address')['token_address'].count(), alternative='greater')
-
-        self.analysis_result['median_no_assets_link'] = median_no_assets_link
-        self.analysis_result_control['median_no_assets_link'] = median_no_assets_linkC
-        self.pvalues['median_no_assets_link'] = median_no_assets_link_pval
+        self.analysis_result['median_no_assets'] = median_no_assets_link.median()
+        self.analysis_result_sample_population['median_no_assets'] = median_no_assets_linkC.median()
+        self.pvalues['median_no_assets'] = median_no_assets_link_pval
 
     def _analyze_labels(self):
         """
-        Analyzes labels associated with the link.
+        Analyzes the labels associated with the link.
         """
-        self.sub_dataFrame.label.fillna('other_contracts', inplace=True)
-        self.sub_dataFrame_control.label.fillna('other_contracts', inplace=True)
-
-        self._calculate_max_influence_label_distribution()
-
-    def _calculate_max_influence_label_distribution(self):
-        """
-        Calculates the label with the maximum influence distribution.
-        """
+        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
+        self.sub_dataFrame_sample_population.fillna({'label': 'other_contracts'}, inplace=True)
 
         self.analysis_result['max_influence_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
-        self.analysis_result_control['max_influence_label_distribution'] = dict(self.sub_dataFrame_control.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
+        self.analysis_result_sample_population['max_influence_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
 
-def analyze_link(sub_dataFrame, sub_dataFrame_control, dataFrame, link, token_lookup):
-    """
-    Function to analyze a link of wallets within given DataFrames.
+    ###############################
+    ##### Influence Metrics #######
+    ###############################
 
-    Args:
-        sub_dataFrame (pd.DataFrame): Subset of the main DataFrame for the link.
-        sub_dataFrame_control (pd.DataFrame): Control subset of the DataFrame.
-        dataFrame (pd.DataFrame): The main DataFrame containing token data.
-        link (list): List of token addresses in the link.
-        token_lookup (dict): Dictionary for token address to token name mapping.
+    def _calculate_total_influence(self):
+        """
+        Computes the total influence of the link.
+        """
+        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
 
-    Returns:
-        tuple: Contains the token names, analysis results, control analysis results, and p-values.
-    """
-    analyzer = LinkAnalysis(link, dataFrame, sub_dataFrame, sub_dataFrame_control, token_lookup)
-    return analyzer.analyze_link()
+        normalised_pct_supply = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        normalised_pct_supplyC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, method='mean', alternative='greater')
+
+        self.analysis_result['total_influence'] = normalised_pct_supply.sum()
+        self.analysis_result_sample_population['total_influence'] = normalised_pct_supplyC.sum()
+        self.pvalues['total_influence'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_total_influence(self):
+        """
+        Computes the Gini coefficient for the total influence.
+        """
+        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
+
+        normalised_pct_supply = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        normalised_pct_supplyC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, method='gini', alternative='lower')
+
+        self.analysis_result['gini_total_influence'] = gini(normalised_pct_supply)
+        self.analysis_result_sample_population['gini_total_influence'] = gini(normalised_pct_supplyC)
+        self.pvalues['gini_total_influence'] = normalised_pct_link_pval
+
+    def _calculate_median_influence(self):
+        """
+        Computes the median influence level within the link.
+        """
+        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
+
+        median_influence_level_link = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_level_link_pval = permutation_test(median_influence_level_link, median_influence_level_linkC, method='median', alternative='greater')
+
+        self.analysis_result['median_influence_level'] = median_influence_level_link.median()
+        self.analysis_result_sample_population['median_influence_level'] = median_influence_level_linkC.median()
+        self.pvalues['median_influence_level'] = median_influence_level_link_pval
+
+    def _calculate_internal_influence(self):
+        """
+        Computes the internal influence of the link.
+        """
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='mean', alternative='greater')
+
+        self.analysis_result['internal_influence'] = normalised_pct_supply_internal.sum()
+        self.analysis_result_sample_population['internal_influence'] = normalised_pct_supply_internalC.sum()
+        self.pvalues['internal_influence'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_internal_influence(self):
+        """
+        Computes the Gini coefficient for the internal influence.
+        """
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='gini', alternative='lower')
+
+        self.analysis_result['gini_internal_influence'] = gini(normalised_pct_supply_internal)
+        self.analysis_result_sample_population['gini_internal_influence'] = gini(normalised_pct_supply_internalC)
+        self.pvalues['gini_internal_influence'] = normalised_pct_link_pval
+
+    def _calculate_external_influence(self):
+        """
+        Computes the external influence of the link.
+        """
+        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
+
+        normalised_pct_supply_external = self.sub_dataFrame[~self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / (no_token_communities_snapshot - len(self.link))
+        normalised_pct_supply_externalC = self.sub_dataFrame_sample_population[~self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / (no_token_communities_snapshot - len(self.link))
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='mean', alternative='greater')
+
+        self.analysis_result['external_influence'] = normalised_pct_supply_external.sum()
+        self.analysis_result_sample_population['external_influence'] = normalised_pct_supply_externalC.sum()
+        self.pvalues['external_influence'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_external_influence(self):
+        """
+        Computes the Gini coefficient for the external influence.
+        """
+        no_token_communities_snapshot = self.dataFrame.token_address.nunique()
+
+        normalised_pct_supply_external = self.sub_dataFrame[~self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / (no_token_communities_snapshot - len(self.link))
+        normalised_pct_supply_externalC = self.sub_dataFrame_sample_population[~self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / (no_token_communities_snapshot - len(self.link))
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='gini', alternative='lower')
+
+        self.analysis_result['gini_external_influence'] = gini(normalised_pct_supply_external)
+        self.analysis_result_sample_population['gini_external_influence'] = gini(normalised_pct_supply_externalC)
+        self.pvalues['gini_external_influence'] = normalised_pct_link_pval
+
+    def _calculate_total_influence_directional(self):
+        """
+        Computes the directional total influence of the link.
+        """
+        normalised_pct_supply = self.sub_dataFrame.groupby('address')['pct_supply'].sum()
+        normalised_pct_supplyC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply, normalised_pct_supplyC, method='mean', alternative='greater')
+
+        self.analysis_result['total_influence_directional'] = normalised_pct_supply.sum()
+        self.analysis_result_sample_population['total_influence_directional'] = normalised_pct_supplyC.sum()
+        self.pvalues['total_influence_directional'] = normalised_pct_link_pval
+
+    ###########################
+    ##### Wealth Metrics ######
+    ###########################
+
+    def _calculate_total_wealth(self):
+        """
+        Computes the total wealth within the link.
+        """
+        wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        wealth_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(wealth_level_link, wealth_level_linkC, method='mean', alternative='greater')
+
+        self.analysis_result['total_wealth_level'] = wealth_level_link.sum()
+        self.analysis_result_sample_population['total_wealth_level'] = wealth_level_linkC.sum()
+        self.pvalues['total_wealth_level'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_total_wealth(self):
+        """
+        Computes the Gini coefficient for the total wealth within the link.
+        """
+        gini_wealth_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        gini_wealth_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(gini_wealth_link, gini_wealth_linkC, method='gini', alternative='greater')
+
+        self.analysis_result['gini_total_wealth'] = gini(gini_wealth_link)
+        self.analysis_result_sample_population['gini_total_wealth'] = gini(gini_wealth_linkC)
+        self.pvalues['gini_total_wealth'] = normalised_pct_link_pval
+
+    def _calculate_median_wealth(self):
+        """
+        Computes the median wealth level within the link.
+        """
+        median_wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        median_wealth_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        median_wealth_level_link_pval = permutation_test(median_wealth_level_link, median_wealth_level_linkC, method='median', alternative='greater')
+
+        self.analysis_result['median_wealth_level'] = median_wealth_level_link.median()
+        self.analysis_result_sample_population['median_wealth_level'] = median_wealth_level_linkC.median()
+        self.pvalues['median_wealth_level'] = median_wealth_level_link_pval
+
+    def _calculate_internal_wealth(self):
+        """
+        Computes the internal wealth of the link (value of tokens that are part of the link).
+        """
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='mean', alternative='greater')
+
+        self.analysis_result['internal_wealth'] = normalised_pct_supply_internal.sum()
+        self.analysis_result_sample_population['internal_wealth'] = normalised_pct_supply_internalC.sum()
+        self.pvalues['internal_wealth'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_internal_wealth(self):
+        """
+        Computes the Gini coefficient for the internal wealth.
+        """
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='gini', alternative='lower')
+
+        self.analysis_result['gini_internal_wealth'] = gini(normalised_pct_supply_internal)
+        self.analysis_result_sample_population['gini_internal_wealth'] = gini(normalised_pct_supply_internalC)
+        self.pvalues['gini_internal_wealth'] = normalised_pct_link_pval
+
+    def _calculate_external_wealth(self):
+        """
+        Computes the external wealth of the link (wealth in tokens not part of the link but part of the sample).
+        """
+        normalised_pct_supply_external = self.sub_dataFrame[~self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_supply_externalC = self.sub_dataFrame_sample_population[~self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='mean', alternative='greater')
+
+        self.analysis_result['external_wealth'] = normalised_pct_supply_external.sum()
+        self.analysis_result_sample_population['external_wealth'] = normalised_pct_supply_externalC.sum()
+        self.pvalues['external_wealth'] = normalised_pct_link_pval
+
+    def _calculate_gini_of_external_wealth(self):
+        """
+        Computes the Gini coefficient for the external wealth.
+        """
+        normalised_pct_supply_external = self.sub_dataFrame[~self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_supply_externalC = self.sub_dataFrame_sample_population[~self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_external, normalised_pct_supply_externalC, method='gini', alternative='lower')
+
+        self.analysis_result['gini_external_wealth'] = gini(normalised_pct_supply_external)
+        self.analysis_result_sample_population['gini_external_wealth'] = gini(normalised_pct_supply_externalC)
+        self.pvalues['gini_external_wealth'] = normalised_pct_link_pval

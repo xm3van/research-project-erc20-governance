@@ -1,4 +1,5 @@
 import requests
+import time 
 
 def get_ticker(coingecko_id): 
     print(coingecko_id)
