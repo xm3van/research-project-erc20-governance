@@ -27,11 +27,10 @@ COLORMAP = 'CMRmap'
 def plot_link_size_over_time(metric_dataframes, group='sample', output_path="output/links/", save=True, show=True):
     
     # Define df 
-    df = metric_dataframes[group]['size_link']
-    df_influenece = metric_dataframes[group]['total_influence']
+    df = metric_dataframes[group]['size']
 
     # common index
-    df_index = metric_dataframes['sample']['size_link']
+    df_index = metric_dataframes['sample']['size']
 
     # Find the index of the first occurrence (value > 1) in each column (snapshot)
     first_occurrence_indices = (df_index.T > 1).idxmax()
@@ -94,7 +93,7 @@ def plot_link_growth_over_time(metric_dataframes, group='sample', output_path="o
     FIG_SIZE = (12, 8)
 
     # Extract data
-    df = metric_dataframes[group]['size_link']
+    df = metric_dataframes[group]['size']
 
     # Sort links by their average size
     links_order = df.mean(axis=1).sort_values(ascending=False).index
@@ -137,7 +136,7 @@ def plot_link_growth_rate_over_time(metric_dataframes, group='sample', output_pa
     MEDIAN_LINE_STYLE = {'color': 'black', 'linewidth': 2, 'linestyle': '--', 'label': 'Median Growth Rate'}
 
     # Extract data
-    df = metric_dataframes[group]['size_link']
+    df = metric_dataframes[group]['size']
 
     # Ensure columns are datetime objects and sort them
     df.columns = pd.to_datetime(df.columns)
@@ -186,7 +185,7 @@ def plot_link_growth_rate_over_time(metric_dataframes, group='sample', output_pa
     plt.tight_layout()
 
     if save:
-        plt.savefig(f"{output_path}/growth_rate_over_time.png", bbox_inches='tight')
+        plt.savefig(f"{output_path}/growth_rate_over_time_{group}.png", bbox_inches='tight')
 
     if show:
         plt.show()
@@ -200,7 +199,7 @@ def plot_link_stability_vs_no_of_tokens(metric_dataframes, group='sample', outpu
     FIG_SIZE = (10, 6)
 
     # Extract data
-    df = metric_dataframes[group]['size_link']
+    df = metric_dataframes[group]['size']
 
     # Calculate the mean size and stability (variance) for each link
     no_of_tokens = np.array(([len(ast.literal_eval(link)) for link in df.index]))
@@ -240,7 +239,7 @@ def plot_link_stability_vs_size(metric_dataframes, group='sample', output_path="
     FIG_SIZE = (10, 6)
 
     # Extract data
-    df = metric_dataframes['sample']['size_link']
+    df = metric_dataframes['sample']['size']
 
     # Calculate mean size and stability (variance) for each link
     mean_size = df.mean(axis=1)
@@ -401,7 +400,7 @@ def plot_boxplot_with_significance(metric_dataframes, metric, unit, group='sampl
         boxplot['boxes'][i].set_facecolor(COLOR_MAP[significance])
 
     # Adding legend for significance
-        if metric == 'size_link':
+        if metric == 'size':
 
             pass
 

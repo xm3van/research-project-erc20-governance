@@ -211,13 +211,13 @@ class LinkAnalysis:
         """
         Computes the median number of assets held by link-defining addresses within a link.
         """
-        median_no_assets_link = self.sub_dataFrame.groupby('address')['token_address'].count()
-        median_no_assets_linkC = self.sub_dataFrame_sample_population.groupby('address')['token_address'].count()
-        median_no_assets_link_pval = permutation_test(median_no_assets_link, median_no_assets_linkC, method='median', alternative='greater')
+        median_number_assets_link = self.sub_dataFrame.groupby('address')['token_address'].count()
+        median_number_assets_linkC = self.sub_dataFrame_sample_population.groupby('address')['token_address'].count()
+        median_number_assets_link_pval = permutation_test(median_number_assets_link, median_number_assets_linkC, method='median', alternative='greater')
 
-        self.analysis_result['median_no_assets'] = median_no_assets_link.median()
-        self.analysis_result_sample_population['median_no_assets'] = median_no_assets_linkC.median()
-        self.pvalues['median_no_assets'] = median_no_assets_link_pval
+        self.analysis_result['median_number_assets'] = median_number_assets_link.median()
+        self.analysis_result_sample_population['median_number_assets'] = median_number_assets_linkC.median()
+        self.pvalues['median_number_assets'] = median_number_assets_link_pval
 
     def _analyze_labels(self):
         """
@@ -267,13 +267,13 @@ class LinkAnalysis:
         """
         no_token_communities_snapshot = self.dataFrame.token_address.nunique()
 
-        median_influence_level_link = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
-        median_influence_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
-        median_influence_level_link_pval = permutation_test(median_influence_level_link, median_influence_level_linkC, method='median', alternative='greater')
+        median_influence_link = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_linkC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_link_pval = permutation_test(median_influence_link, median_influence_linkC, method='median', alternative='greater')
 
-        self.analysis_result['median_influence_level'] = median_influence_level_link.median()
-        self.analysis_result_sample_population['median_influence_level'] = median_influence_level_linkC.median()
-        self.pvalues['median_influence_level'] = median_influence_level_link_pval
+        self.analysis_result['median_influence'] = median_influence_link.median()
+        self.analysis_result_sample_population['median_influence'] = median_influence_linkC.median()
+        self.pvalues['median_influence'] = median_influence_link_pval
 
     def _calculate_internal_influence(self):
         """
@@ -347,13 +347,13 @@ class LinkAnalysis:
         """
         Computes the total wealth within the link.
         """
-        wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
-        wealth_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
-        normalised_pct_link_pval = permutation_test(wealth_level_link, wealth_level_linkC, method='mean', alternative='greater')
+        wealth_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        wealth_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(wealth_link, wealth_linkC, method='mean', alternative='greater')
 
-        self.analysis_result['total_wealth_level'] = wealth_level_link.sum()
-        self.analysis_result_sample_population['total_wealth_level'] = wealth_level_linkC.sum()
-        self.pvalues['total_wealth_level'] = normalised_pct_link_pval
+        self.analysis_result['total_wealth'] = wealth_link.sum()
+        self.analysis_result_sample_population['total_wealth'] = wealth_linkC.sum()
+        self.pvalues['total_wealth'] = normalised_pct_link_pval
 
     def _calculate_gini_of_total_wealth(self):
         """
@@ -369,15 +369,15 @@ class LinkAnalysis:
 
     def _calculate_median_wealth(self):
         """
-        Computes the median wealth level within the link.
+        Computes the median wealth  within the link.
         """
-        median_wealth_level_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
-        median_wealth_level_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
-        median_wealth_level_link_pval = permutation_test(median_wealth_level_link, median_wealth_level_linkC, method='median', alternative='greater')
+        median_wealth_link = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        median_wealth_linkC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        median_wealth_link_pval = permutation_test(median_wealth_link, median_wealth_linkC, method='median', alternative='greater')
 
-        self.analysis_result['median_wealth_level'] = median_wealth_level_link.median()
-        self.analysis_result_sample_population['median_wealth_level'] = median_wealth_level_linkC.median()
-        self.pvalues['median_wealth_level'] = median_wealth_level_link_pval
+        self.analysis_result['median_wealth'] = median_wealth_link.median()
+        self.analysis_result_sample_population['median_wealth'] = median_wealth_linkC.median()
+        self.pvalues['median_wealth'] = median_wealth_link_pval
 
     def _calculate_internal_wealth(self):
         """

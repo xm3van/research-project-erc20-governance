@@ -24,7 +24,7 @@ df_token_price = pd.read_csv("data/price_table.csv", index_col=0)
 TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_enriched")
 VALIDATED_PROJECTIONS_INPUT_PATH = join(path, 'data/validated_token_projection_graphs')
 START_BLOCK_HEIGHT = 11659570
-SUPPLY_THRESHOLD = 0  # given as faction (i.e. 1% = 0.01)
+SENSITIVITY_ANALYSIS = True #NOTE: False run with Reference value 0.000005 ~ 0.0005% of supply 
 
 # remove burner addresses
 known_burner_addresses = ['0x0000000000000000000000000000000000000000',
@@ -85,14 +85,15 @@ def analyze_link(link, ddf, token_lookup):
 
     return (results, results_sample_population, pvalues, results_directional, results_sample_population_directional, pvalues_directional)
 
-def process_snapshot(snapshot_data):
+def process_snapshot(snapshot_data, supply_threshold=0.000005):
     snapshot_date, snapshot_block_height, df_tokens, df_token_price = snapshot_data
     print(f"Snapshot for Block Height: {snapshot_block_height} - {datetime.datetime.now()}")
 
     ddf = pd.read_csv(join(TOKEN_BALANCE_TABLE_INPUT_PATH, f'token_holder_snapshot_balance_labelled_{snapshot_block_height}.csv'))
     ddf = ddf[ddf.token_address.str.lower().isin(df_tokens.address.str.lower())]
     ddf = ddf[~ddf.address.isin(known_burner_addresses)]
-    ddf = ddf[ddf.pct_supply > SUPPLY_THRESHOLD]
+    ddf = ddf[ddf.pct_supply >= supply_threshold]
+
     ddf['token_price_usd'] = ddf['token_address'].apply(lambda x: df_token_price.loc[str(x), str(snapshot_block_height)])
     ddf['value_usd'] = ddf['value'] / (10**18) * ddf['token_price_usd']
     token_lookup = df_tokens[['address', 'symbol']].set_index('address')['symbol'].to_dict()
@@ -125,13 +126,13 @@ def process_snapshot(snapshot_data):
 
     return snapshot_date, links_snapshot, links_snapshot_sample_population, links_pvalues, links_snapshot_directional, links_snapshot_sample_population_directional, links_pvalues_directional
 
-def links_main():
+def links_main(supply_threshold=0.000005):
     links = {'sample': {}, 'sample_population': {}, 'pvalues': {}, 'sample_directional': {}, 'sample_population_directional': {}, 'pvalues_directional': {}}
 
     snapshots_data = [(row['Date'], row['Block Height'], df_tokens, df_token_price) for _, row in df_snapshots[df_snapshots['Block Height'] >= START_BLOCK_HEIGHT].iterrows()]
 
     for snapshot_data in snapshots_data:
-        snapshot_date, links_snapshot, links_snapshot_sample_population, links_pvalues, links_snapshot_directional, links_snapshot_sample_population_directional, links_pvalues_directional = process_snapshot(snapshot_data)
+        snapshot_date, links_snapshot, links_snapshot_sample_population, links_pvalues, links_snapshot_directional, links_snapshot_sample_population_directional, links_pvalues_directional = process_snapshot(snapshot_data, supply_threshold)
 
         links['sample'][snapshot_date] = links_snapshot
         links['sample_population'][snapshot_date] = links_snapshot_sample_population
@@ -144,13 +145,33 @@ def links_main():
     return links
 
 if __name__ == "__main__":
-    links = links_main()  # Store the returned links dictionary
 
-    # Specify the path to save the links data
-    output_path = join(path, 'data/links_data.pkl')
+    if SENSITIVITY_ANALYSIS == False: 
+        links = links_main()  # Store the returned links dictionary
 
-    # Serialize and save the links dictionary
-    with open(output_path, 'wb') as handle:
-        pickle.dump(links, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # Specify the path to save the links data
+        output_path = join(path, 'output/links/metrics/links_data.pkl')
 
-    print(f"links data saved to {output_path}")
+        # Serialize and save the links dictionary
+        with open(output_path, 'wb') as handle:
+            pickle.dump(links, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        print(f"links data saved to {output_path}")
+
+    else:
+        # search range 
+        supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.0000005]
+
+        for supply_threshold in supply_thresholds: 
+
+            print(f"Supply Threshold: {supply_threshold}")
+
+
+            cliques = links_main(supply_threshold)
+            output_path = join(path, f'output/links/metrics/links_data_{supply_threshold}.pkl')
+
+            with open(output_path, 'wb') as handle:
+                pickle.dump(cliques, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            print(f"links data saved to {output_path}")
+

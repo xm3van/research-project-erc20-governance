@@ -18,8 +18,8 @@ class CliquesData:
         return cliques
 
     def get_metric_names(self):
-        example_key = next(iter(self.cliques['lower_bound']['sample']))
-        metrics_example = self.cliques['lower_bound']['sample'][example_key]
+        example_key = next(iter(self.cliques['strong_estimate']['sample']))
+        metrics_example = self.cliques['strong_estimate']['sample'][example_key]
         first_clique_key = next(iter(metrics_example.keys()))
         metric_names = list(metrics_example[first_clique_key].keys())
         return metric_names
@@ -179,16 +179,6 @@ class CliqueAnalysis:
 
         self.sub_df.fillna({'label': 'other_contracts'}, inplace=True)
         self.sub_df_control.fillna({'label': 'other_contracts'}, inplace=True)
-
-
-
-        self._calculate_max_influence_label_distribution()
-
-    def _calculate_max_influence_label_distribution(self):
-        """
-        Calculates the label with the maximum influence distribution.
-        """
-
         self.analysis_result['max_influence_label_distribution'] = dict(self.sub_df.groupby(['label'])['pct_supply'].sum() / self.df.token_address.nunique())
         self.analysis_result_control['max_influence_label_distribution'] = dict(self.sub_df_control.groupby(['label'])['pct_supply'].sum() / self.df.token_address.nunique())
 

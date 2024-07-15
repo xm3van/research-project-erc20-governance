@@ -63,7 +63,7 @@ class CliqueAnalysis:
         _analyze_labels(): Analyzes the labels associated with the clique.
         _calculate_total_influence(): Computes the total influence of the clique.
         _calculate_gini_of_total_influence(): Computes the Gini coefficient for the total influence.
-        _calculate_median_influence(): Computes the median influence level within the clique.
+        _calculate_median_influence(): Computes the median influence  within the clique.
         _calculate_internal_influence(): Computes the internal influence of the clique.
         _calculate_gini_of_internal_influence(): Computes the Gini coefficient for the internal influence.
         _calculate_external_influence(): Computes the external influence of the clique.
@@ -71,7 +71,7 @@ class CliqueAnalysis:
         _calculate_total_influence_directional(): Computes the directional total influence of the clique.
         _calculate_total_clique_wealth(): Computes the total wealth within the clique.
         _calculate_gini_of_total_clique_wealth(): Computes the Gini coefficient for the total wealth within the clique.
-        _calculate_median_wealth(): Computes the median wealth level within the clique.
+        _calculate_median_wealth(): Computes the median wealth  within the clique.
         _calculate_internal_wealth(): Computes the internal wealth of the clique.
         _calculate_gini_of_internal_wealth(): Computes the Gini coefficient for the internal wealth.
         _calculate_external_wealth(): Computes the external wealth of the clique.
@@ -180,13 +180,13 @@ class CliqueAnalysis:
         """
         Computes the median number of assets held by clique-defining addresses within a clique.
         """
-        median_no_assets_clique = self.sub_dataFrame.groupby('address')['token_address'].count()
-        median_no_assets_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['token_address'].count()
-        median_no_assets_clique_pval = permutation_test(median_no_assets_clique, median_no_assets_cliqueC, method='median', alternative='greater')
+        median_number_assets_clique = self.sub_dataFrame.groupby('address')['token_address'].count()
+        median_number_assets_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['token_address'].count()
+        median_number_assets_clique_pval = permutation_test(median_number_assets_clique, median_number_assets_cliqueC, method='median', alternative='greater')
 
-        self.analysis_result['median_no_assets'] = median_no_assets_clique.median()
-        self.analysis_result_sample_population['median_no_assets'] = median_no_assets_cliqueC.median()
-        self.pvalues['median_no_assets'] = median_no_assets_clique_pval
+        self.analysis_result['median_number_assets'] = median_number_assets_clique.median()
+        self.analysis_result_sample_population['median_number_assets'] = median_number_assets_cliqueC.median()
+        self.pvalues['median_number_assets'] = median_number_assets_clique_pval
 
     def _analyze_labels(self):
         """
@@ -232,17 +232,17 @@ class CliqueAnalysis:
 
     def _calculate_median_influence(self):
         """
-        Computes the median influence level within the clique.
+        Computes the median influence  within the clique.
         """
         no_token_communities_snapshot = self.dataFrame.token_address.nunique()
 
-        median_influence_level_clique = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
-        median_influence_level_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
-        median_influence_level_clique_pval = permutation_test(median_influence_level_clique, median_influence_level_cliqueC, method='median', alternative='greater')
+        median_influence_clique = self.sub_dataFrame.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['pct_supply'].sum() / no_token_communities_snapshot
+        median_influence_clique_pval = permutation_test(median_influence_clique, median_influence_cliqueC, method='median', alternative='greater')
 
-        self.analysis_result['median_influence_level'] = median_influence_level_clique.median()
-        self.analysis_result_sample_population['median_influence_level'] = median_influence_level_cliqueC.median()
-        self.pvalues['median_influence_level'] = median_influence_level_clique_pval
+        self.analysis_result['median_influence'] = median_influence_clique.median()
+        self.analysis_result_sample_population['median_influence'] = median_influence_cliqueC.median()
+        self.pvalues['median_influence'] = median_influence_clique_pval
 
     def _calculate_internal_influence(self):
         """
@@ -316,13 +316,13 @@ class CliqueAnalysis:
         """
         Computes the total wealth within the clique.
         """
-        wealth_level_clique = self.sub_dataFrame.groupby('address')['value_usd'].sum()
-        wealth_level_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
-        normalised_pct_clique_pval = permutation_test(wealth_level_clique, wealth_level_cliqueC, method='mean', alternative='greater')
+        wealth_clique = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        wealth_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        normalised_pct_clique_pval = permutation_test(wealth_clique, wealth_cliqueC, method='mean', alternative='greater')
 
-        self.analysis_result['total_wealth_level'] = wealth_level_clique.sum()
-        self.analysis_result_sample_population['total_wealth_level'] = wealth_level_cliqueC.sum()
-        self.pvalues['total_wealth_level'] = normalised_pct_clique_pval
+        self.analysis_result['total_wealth'] = wealth_clique.sum()
+        self.analysis_result_sample_population['total_wealth'] = wealth_cliqueC.sum()
+        self.pvalues['total_wealth'] = normalised_pct_clique_pval
 
     def _calculate_gini_of_total_wealth(self):
         """
@@ -338,15 +338,15 @@ class CliqueAnalysis:
 
     def _calculate_median_wealth(self):
         """
-        Computes the median wealth level within the clique.
+        Computes the median wealth  within the clique.
         """
-        median_wealth_level_clique = self.sub_dataFrame.groupby('address')['value_usd'].sum()
-        median_wealth_level_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
-        median_wealth_level_clique_pval = permutation_test(median_wealth_level_clique, median_wealth_level_cliqueC, method='median', alternative='greater')
+        median_wealth_clique = self.sub_dataFrame.groupby('address')['value_usd'].sum()
+        median_wealth_cliqueC = self.sub_dataFrame_sample_population.groupby('address')['value_usd'].sum()
+        median_wealth_clique_pval = permutation_test(median_wealth_clique, median_wealth_cliqueC, method='median', alternative='greater')
 
-        self.analysis_result['median_wealth_level'] = median_wealth_level_clique.median()
-        self.analysis_result_sample_population['median_wealth_level'] = median_wealth_level_cliqueC.median()
-        self.pvalues['median_wealth_level'] = median_wealth_level_clique_pval
+        self.analysis_result['median_wealth'] = median_wealth_clique.median()
+        self.analysis_result_sample_population['median_wealth'] = median_wealth_cliqueC.median()
+        self.pvalues['median_wealth'] = median_wealth_clique_pval
 
     def _calculate_internal_wealth(self):
         """

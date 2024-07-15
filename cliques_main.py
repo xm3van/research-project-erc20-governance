@@ -195,7 +195,7 @@ def cliques_main():
 
 if __name__ == "__main__":
     cliques, insufficient_control_population = cliques_main()
-    output_path = join(path, 'data/cliques_data_class.pkl')
+    output_path = join(path, 'data/cliques_data.pkl')
 
     with open(output_path, 'wb') as handle:
         pickle.dump(cliques, handle, protocol=pickle.HIGHEST_PROTOCOL)
