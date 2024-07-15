@@ -18,6 +18,7 @@ path = os.environ['DATA_DIRECTORY']
 SNAPSHOT_CSV_PATH = 'data/snapshot_selection.csv'
 ADDRESS_CSV_PATH = 'data/final_token_selection.csv'
 OUTPUT_PATH = join(path, 'data/validated_wallet_projection_graphs')
+SUPPLY_THRESHOLD = 0.01 # 0.01  equal 1% of token supply
 
 KNOWN_BURNER_ADDRESSES = set([
     '0x0000000000000000000000000000000000000000', '0x000000000000000000000000000000000000dead',
@@ -43,7 +44,7 @@ def process_snapshot(snapshot, df_addresses):
     
     # Efficient filtering using Dask
     ddf = ddf[(ddf['value'] > 0) & 
-              (ddf.pct_supply > 0.01) &
+              (ddf.pct_supply > SUPPLY_THRESHOLD) &
               (~ddf['address'].isin(KNOWN_BURNER_ADDRESSES)) & 
               (ddf['token_address'].isin(df_addresses['address']))]
 
