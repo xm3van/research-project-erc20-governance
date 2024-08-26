@@ -171,7 +171,8 @@ if __name__ == "__main__":
 
     else:
         # search range 
-        supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.0000005]
+        # supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.00000005]
+        supply_thresholds = [0.00000005]
 
         for supply_threshold in supply_thresholds: 
             

@@ -36,16 +36,27 @@ class LinkData:
         return links
 
     def get_metric_names(self):
-        """
-        Retrieves the metric names from the link data.
-
-        Returns:
-            list: A list of metric names.
-        """
-        example_key = next(iter(self.links['sample']))
-        metrics_example = self.links['sample'][example_key]
-        first_link_key = next(iter(metrics_example.keys()))
-        metric_names = list(metrics_example[first_link_key].keys())
+        # Manually define all possible metric names
+        metric_names = [
+            'size',
+            'median_number_assets',
+            'max_influence_label_distribution',
+            'total_influence',
+            'gini_total_influence',
+            'median_influence',
+            'internal_influence',
+            'gini_internal_influence',
+            'external_influence',
+            'gini_external_influence',
+            'total_influence_directional',
+            'total_wealth',
+            'gini_total_wealth',
+            'median_wealth',
+            'internal_wealth',
+            'gini_internal_wealth',
+            'external_wealth',
+            'gini_external_wealth'
+        ]
         return metric_names
 
     def get_metric_data(self, group, metric_name):
@@ -179,7 +190,7 @@ class LinkAnalysis:
             # Labels
             self._analyze_labels()
 
-        elif self.directional == True:
+        if self.directional == True:
             # Descriptive metrics
             self._calculate_size()
             self._calculate_median_token_holding_count()

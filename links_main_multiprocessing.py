@@ -25,6 +25,7 @@ TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_
 VALIDATED_PROJECTIONS_INPUT_PATH = join(path, 'data/validated_token_projection_graphs')
 START_BLOCK_HEIGHT = 11659570
 SENSITIVITY_ANALYSIS = True #NOTE: False run with Reference value 0.000005 ~ 0.0005% of supply 
+REFERENCE_VALUE = 0.000005
 
 # remove burner addresses
 known_burner_addresses = ['0x0000000000000000000000000000000000000000',
@@ -70,7 +71,7 @@ def analyze_link(link, ddf, token_lookup):
         filter1 = ddf.token_address == token
         filter2 = ddf.address.isin(link_members_unique)
 
-        ddf_sample_directional = ddf[filter2 & filter1].copy()
+        ddf_sample_directional = ddf[filter1 & filter2].copy()
         token_name = token_lookup[token]
 
         ddf_sample_population_directional = ddf[filter1].copy()
@@ -85,7 +86,7 @@ def analyze_link(link, ddf, token_lookup):
 
     return (results, results_sample_population, pvalues, results_directional, results_sample_population_directional, pvalues_directional)
 
-def process_snapshot(snapshot_data, supply_threshold=0.000005):
+def process_snapshot(snapshot_data, supply_threshold=REFERENCE_VALUE):
     snapshot_date, snapshot_block_height, df_tokens, df_token_price = snapshot_data
     print(f"Snapshot for Block Height: {snapshot_block_height} - {datetime.datetime.now()}")
 
@@ -126,7 +127,7 @@ def process_snapshot(snapshot_data, supply_threshold=0.000005):
 
     return snapshot_date, links_snapshot, links_snapshot_sample_population, links_pvalues, links_snapshot_directional, links_snapshot_sample_population_directional, links_pvalues_directional
 
-def links_main(supply_threshold=0.000005):
+def links_main(supply_threshold=REFERENCE_VALUE):
     links = {'sample': {}, 'sample_population': {}, 'pvalues': {}, 'sample_directional': {}, 'sample_population_directional': {}, 'pvalues_directional': {}}
 
     snapshots_data = [(row['Date'], row['Block Height'], df_tokens, df_token_price) for _, row in df_snapshots[df_snapshots['Block Height'] >= START_BLOCK_HEIGHT].iterrows()]
@@ -160,7 +161,8 @@ if __name__ == "__main__":
 
     else:
         # search range 
-        supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.0000005]
+        # supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.00000005]
+        supply_thresholds = [0.00000005]
 
         for supply_threshold in supply_thresholds: 
 

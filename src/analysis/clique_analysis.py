@@ -18,10 +18,27 @@ class CliquesData:
         return cliques
 
     def get_metric_names(self):
-        example_key = next(iter(self.cliques['strong_estimate']['sample']))
-        metrics_example = self.cliques['strong_estimate']['sample'][example_key]
-        first_clique_key = next(iter(metrics_example.keys()))
-        metric_names = list(metrics_example[first_clique_key].keys())
+        # Manually define all possible metric names
+        metric_names = [
+            'size',
+            'median_number_assets',
+            'max_influence_label_distribution',
+            'total_influence',
+            'gini_total_influence',
+            'median_influence',
+            'internal_influence',
+            'gini_internal_influence',
+            'external_influence',
+            'gini_external_influence',
+            'total_influence_directional',
+            'total_wealth',
+            'gini_total_wealth',
+            'median_wealth',
+            'internal_wealth',
+            'gini_internal_wealth',
+            'external_wealth',
+            'gini_external_wealth'
+        ]
         return metric_names
 
     def get_metric_data(self, bound, group, metric_name):
