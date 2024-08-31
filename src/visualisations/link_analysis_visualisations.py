@@ -500,15 +500,16 @@ def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', out
     """
     
     short_readable_labels = {
-    'EMOA': 'Retail Wallets',
-    'IEMOA': 'Institutional Wallets',
-    'PCV': 'Protocol Wallets',
-    'bridge_contract': 'Bridge Contracts',
-    'other_contracts': 'Other Contracts',
-    'vesting_contract': 'Vesting Contracts',
-    'external_staking_contracts': 'Staking Contracts',
-    'lp_amm': 'Liquidity Pools',
-    'lending_borrowing_contract': 'Lending/Borrowing'
+    'EMOA': 'EOA Address',
+    'IEMOA': 'Institutional Address',
+    'PCV': 'Protocol Address',
+    'vesting_contract': 'Vesting Contract Addresses',
+    'external_staking_contracts': 'Staking Contract Address',
+    'lp_amm': 'Liquidity Pool Address',
+    'lending_borrowing_contract': 'Lending/Borrowing Contract Address',
+    'bridge_contract': 'Bridge Contract Address',
+    'other_contracts': 'Other Contract Address',
+
     }
     
     df_raw = metric_dataframes[group]['max_influence_label_distribution']
