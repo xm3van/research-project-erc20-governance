@@ -1,12 +1,22 @@
 import pandas as pd
 import numpy as np
 import ast
+import json
+
+import os
 from os.path import join
+import sys 
+import pickle
+
+import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as patches
+import matplotlib.lines as mlines
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from scipy.stats import pearsonr
 from src.utilities.metrics_and_tests import pval_to_significance
 
 ### GLOBAL VARIABLES 
@@ -19,6 +29,22 @@ LINE_SPACING=1.5
 FIG_SIZE = (25, 20)
 COLORS = ['white', 'black']
 COLORMAP = 'CMRmap'
+
+
+# Global Style Settings
+plt.rcParams.update({
+    # 'font.size': 16,
+    # 'figure.figsize': (25, 20),
+    'figure.dpi': 300,
+    'savefig.dpi': 300,
+    # 'axes.labelsize': 20,
+    # 'axes.titlesize': 24,
+    # 'xtick.labelsize': 16,
+    # 'ytick.labelsize': 16,
+    # 'legend.fontsize': 12,
+    # 'lines.linewidth': 2,
+    # 'axes.prop_cycle': plt.cycler(color=plt.cm.magma(np.linspace(0, 1, 10)))
+})
 
 #####################################
 ########### Link Size #############
@@ -58,7 +84,7 @@ def plot_link_size_over_time(metric_dataframes, group='sample', output_path="out
     ax.set_xticks(np.arange(len(df.columns)))
     ax.set_yticks(np.arange(len(df.index)))
     ax.set_xticklabels(df.columns, rotation='vertical')
-    ax.set_yticklabels(df.index, fontsize=FONT_SIZE_TICK, va='center', linespacing=LINE_SPACING)
+    ax.set_yticklabels(df.index, fontsize=FONT_SIZE_TICK, va='center', linespacing=1.5)
 
     # Annotate the chart with 'link_size' values, skipping 'NaN' values
     for i in range(len(df.index)):
@@ -127,151 +153,50 @@ def plot_link_growth_over_time(metric_dataframes, group='sample', output_path="o
         plt.show()
 
 #####################################
-###### Link Growth Rate ###########
+###### Key Scatter Chart ############
 #####################################
 
-def plot_link_growth_rate_over_time(metric_dataframes, group='sample', output_path="output/links/", save=True, show=True):
-    # Constants for aesthetics
-    FIG_SIZE = (12, 8)
-    MEDIAN_LINE_STYLE = {'color': 'black', 'linewidth': 2, 'linestyle': '--', 'label': 'Median Growth Rate'}
 
-    # Extract data
-    df = metric_dataframes[group]['size']
+def plot_scatter_metrics(metric_dataframes, x_metric, y_metric, group='sample', output_path="output/metrics/", save=True, show=True, dpi=300):
+    # To-do: 
+    ### Add in colouring by clique
 
-    # Ensure columns are datetime objects and sort them
-    df.columns = pd.to_datetime(df.columns)
-    df = df.sort_index(axis=1)
-
-    # Prepare a DataFrame to store growth rates
-    growth_rate_df = pd.DataFrame(index=df.index, columns=df.columns)
-
-    # Calculate growth rates for each link based on available values
-    for link, values in df.iterrows():
-        available_values = values.dropna()
-        if len(available_values) > 1:
-            growth_rates = available_values.pct_change().dropna()
-            growth_rate_df.loc[link, growth_rates.index] = growth_rates
-
-    # Filter links that occur less than 4 times
-    valid_links = growth_rate_df.dropna(thresh=4).index
-    filtered_growth_rate_df = growth_rate_df.loc[valid_links]
-
-    # Calculate median growth rates over time
-    median_growth_rate = filtered_growth_rate_df.median(axis=0).dropna()
-
-    # Prepare figure and axis
-    fig, ax = plt.subplots(figsize=FIG_SIZE)
-
-    # Plot available growth rates for each link
-    for link in valid_links:
-        link_growth_rates = filtered_growth_rate_df.loc[link].dropna()
-        ax.plot(link_growth_rates.index, link_growth_rates, marker='o', linestyle='-', label=f'Link {link}')
-
-    # Plot median growth rate over time
-    ax.plot(median_growth_rate.index, median_growth_rate, **MEDIAN_LINE_STYLE)
-
-    # Labels and Title
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Growth Rate")
-    ax.set_title("Growth Rate of Links Over Time")
-
-    # Set tick positions and labels
-    ax.set_xticks(median_growth_rate.index)  # Set tick positions
-    ax.set_xticklabels(median_growth_rate.index.strftime('%Y-%m-%d'), rotation=90)  # Set tick labels and rotate for better readability
-
-    # Add legend
-    ax.legend(title="Links", loc='upper left', bbox_to_anchor=(1, 1))
-
-    plt.tight_layout()
-
-    if save:
-        plt.savefig(f"{output_path}/growth_rate_over_time_{group}.png", bbox_inches='tight')
-
-    if show:
-        plt.show()
-
-#####################################
-#### Stability vs. No. of Tokens ####
-#####################################
-
-def plot_link_stability_vs_no_of_tokens(metric_dataframes, group='sample', output_path="output/links/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (10, 6)
 
-    # Extract data
-    df = metric_dataframes[group]['size']
+    # Ensure output directory exists
+    os.makedirs(output_path, exist_ok=True)
 
-    # Calculate the mean size and stability (variance) for each link
-    no_of_tokens = np.array(([len(ast.literal_eval(link)) for link in df.index]))
-    
-    stability = np.array(df.notna().astype(int).mean(axis=1)) # note binary measure of stability
+    # Extract data
+    x_data = metric_dataframes[group][x_metric].dropna()
+    y_data = metric_dataframes[group][y_metric].dropna()
 
     # Prepare figure and axis for plotting
     fig, ax = plt.subplots(figsize=FIG_SIZE)
 
-    # Create a scatter plot of stability versus mean size
-    ax.scatter(no_of_tokens, stability)
-    
-    # Labels and Title
-    ax.set_xlabel("Number of Tokens")
-    ax.set_ylabel("Link Stability")
-    ax.set_title("Link Stability vs. Number of Tokens")
+    # Create a scatter plot of the two metrics
+    ax.scatter(x_data, y_data)
 
-    # Show the correlation value on the plot
-    correlation = np.corrcoef(no_of_tokens, stability)[0, 1]
-    ax.text(0.05, 0.95, f'Correlation: {correlation:.2f}', transform=ax.transAxes,
-            fontsize=12, verticalalignment='top')
+    # Labels and Title
+    ax.set_xlabel(x_metric.replace('_', ' ').title())
+    ax.set_ylabel(y_metric.replace('_', ' ').title())
+    ax.set_title(f"{x_metric.replace('_', ' ').title()} vs {y_metric.replace('_', ' ').title()}")
+
+    # # Calculate correlation and p-value
+    # correlation, p_value = pearsonr(x_data.mean(), y_data.mean())
+
+    # # Show the correlation value and p-value on the plot
+    # ax.text(0.05, 0.95, f'Correlation of Means: {correlation:.2f}\nP-value: {p_value:.3f}', transform=ax.transAxes,
+    #         fontsize=10, verticalalignment='top')
 
     plt.tight_layout()
 
     # Save or show the figure
     if save:
-        plt.savefig(f"{output_path}/link_stability_vs_size_{group}.png", bbox_inches='tight')
+        plt.savefig(f"{output_path}/{x_metric}_vs_{y_metric}_{group}.png", bbox_inches='tight', dpi=dpi)
     if show:
         plt.show()
 
-#####################################
-###### Stability vs Size ############
-#####################################
-        
-def plot_link_stability_vs_size(metric_dataframes, group='sample', output_path="output/links/", save=True, show=True):
-    # Constants for aesthetics
-    FIG_SIZE = (10, 6)
-
-    # Extract data
-    df = metric_dataframes['sample']['size']
-
-    # Calculate mean size and stability (variance) for each link
-    mean_size = df.mean(axis=1)
-    
-    stability = df.notna().astype(int).var(axis=1) # note binary measure of stability
-
-    # Prepare figure and axis for plotting
-    fig, ax = plt.subplots(figsize=FIG_SIZE)
-
-    # Create a scatter plot of stability versus mean size
-    ax.scatter(mean_size, stability)
-    
-    # Labels and Title
-    ax.set_xlabel("Mean Link Size")
-    ax.set_ylabel("Link Stability (Variance)")
-    ax.set_title("Link Stability vs. Size")
-
-    # Show the correlation value on the plot
-    correlation = mean_size.corr(stability)
-    ax.text(0.05, 0.95, f'Correlation: {correlation:.2f}', transform=ax.transAxes,
-            fontsize=12, verticalalignment='top')
-
-    plt.tight_layout()
-
-    # Save or show the figure
-    if save:
-        plt.savefig(f"{output_path}/link_stability_vs_size_{group}.png", bbox_inches='tight')
-    if show:
-        plt.show()
-        
-        
-        
         
 #####################################
 ###### Key Heatmap Chart ############
@@ -328,10 +253,10 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=False, outp
     # cbar.set_ticklabels([f'{round(val)}%' for val in tick_vals])
     
     # Significance box
-    plt.text(1.16, 0.98, 'Relative to Control:\n* = 0.1\n** = 0.05\n*** = 0.01', 
+    ax.text(1.05, 1, 'Relative to Control:\n*** = 0.01\n** = 0.05\n* = 0.1', 
          transform=ax.transAxes, fontsize=FONT_SIZE_TEXT, 
-         verticalalignment='top', horizontalalignment='right',
-         bbox=dict(facecolor='lightyellow', alpha=1, pad=12))
+         verticalalignment='top', horizontalalignment='left',
+         bbox=dict(boxstyle="square,pad=0.3", facecolor='lightyellow', edgecolor='black'))
     # Labels and title
     ax.set_xlabel('Date', size=FONT_SIZE_LABEL)
     ax.set_ylabel('Links', size=FONT_SIZE_LABEL)
@@ -429,8 +354,6 @@ def plot_boxplot_with_significance(metric_dataframes, metric, unit, group='sampl
 #####################################
 ###### Influence Labels #############
 #####################################
-
-
 def create_and_normalize_matrix(dataframe, label_column='Link Name', short_labels=None):
     """
     Create a normalized matrix from a dataframe with string-encoded dictionaries of influence labels.
@@ -479,44 +402,55 @@ def create_and_normalize_matrix(dataframe, label_column='Link Name', short_label
 
     if short_labels:
         result_df.rename(columns=short_labels, inplace=True)
+        result_df = result_df[[short_labels[key] for key in short_labels if short_labels[key] in result_df.columns]]
+
 
     return result_df
 
 
-def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', output_path='output/links'):
+def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', output_path='output/links', min_occurrences=9):
     """
-    Plot a heatmap from a dataframe.
+    Plot a heatmap from a dataframe, filtering links with a minimum number of occurrences.
 
     Args:
-        df (pd.DataFrame): The dataframe to plot.
-        title (str): The title of the heatmap.
-        xlabel (str): The label for the x-axis.
-        ylabel (str): The label for the y-axis.
+        metric_dataframes (dict): A dictionary containing dataframes to plot.
+        group (str): The group to select from the metric_dataframes.
         colormap (str): The colormap to use for the heatmap.
         output_path (str): The directory to save the heatmap.
+        min_occurrences (int): The minimum number of occurrences required to keep a link (default: 9).
 
     Returns:
         None
     """
     
     short_readable_labels = {
-    'EMOA': 'EOA Address',
-    'IEMOA': 'Institutional Address',
-    'PCV': 'Protocol Address',
-    'vesting_contract': 'Vesting Contract Addresses',
-    'external_staking_contracts': 'Staking Contract Address',
-    'lp_amm': 'Liquidity Pool Address',
-    'lending_borrowing_contract': 'Lending/Borrowing Contract Address',
-    'bridge_contract': 'Bridge Contract Address',
-    'other_contracts': 'Other Contract Address',
-
+        'EMOA': 'EOA Addresses',
+        'IEMOA': 'Institutional Addresses',
+        'PCV': 'Protocol Addresses',
+        'vesting_contract': 'Vesting Contracts',
+        'external_staking_contracts': 'Staking Contracts',
+        'lp_amm': 'Liquidity Pools',
+        'lending_borrowing_contract': 'Lending/Borrowing Contracts',
+        'bridge_contract': 'Bridge Contracts',
+        'other_contracts': 'Other Contracts',
     }
     
+    # Get the raw data for the specified group
     df_raw = metric_dataframes[group]['max_influence_label_distribution']
-    df_raw.reset_index(inplace=True)
 
-    df = create_and_normalize_matrix(df_raw, label_column='Link Name', short_labels=short_readable_labels)
+    # Filter for links with at least `min_occurrences` non-NaN values
+    link_occurrences = df_raw.notna().sum(axis=1)
+    df_filtered = df_raw[link_occurrences >= min_occurrences]
+
+    # Create and normalize the matrix using the filtered DataFrame
+    df = create_and_normalize_matrix(df_filtered.reset_index(), label_column='Link Name', short_labels=short_readable_labels)
     
+    # Check if the dataframe is empty after filtering
+    if df.empty:
+        print(f"No data to plot after filtering for {group} group.")
+        return  # Exit the function if there's no data to plot
+
+    # Proceed with plotting if the DataFrame is not empty
     fig, ax = plt.subplots(figsize=(20,16))
     data = df.to_numpy() * 100
 
@@ -535,10 +469,216 @@ def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', out
     ax.set_yticklabels(df.index, size=16)
     ax.tick_params(axis='x', bottom=True, top=False, labelbottom=True)
 
+    # Set a threshold for text color based on the maximum value in the data
     text_color_threshold = np.max(data) / 2
     for (i, j), val in np.ndenumerate(data):
-        ax.text(j, i, f'{val:.0f}%', ha='center', va='center',
+        ax.text(j, i, f'{val:.1f}%', ha='center', va='center',
                 color='white' if val < text_color_threshold else 'black', fontsize=14)
 
+    # Save plot
     plt.savefig(f"{output_path}/label_plot_links.png", bbox_inches='tight')
     plt.show()
+
+#####################################
+###### Key Lollipop chart Labels ####
+#####################################
+
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import numpy as np
+import pandas as pd
+import json
+from scipy.stats import pearsonr
+
+def pval_to_marker(pval):
+    """ Returns marker style, face color, edge color, edge width, and size based on p-value significance level. """
+    if pval < 0.01:
+        return 'D', 'black', 'black', 3, 8  # Filled circle
+    elif pval < 0.05:
+        return 'D', 'none', 'black', 3, 8  # Bold circle (outlined thicker)
+    elif pval < 0.1:
+        return 'D', 'none', 'black', 1, 8  # Standard circle (outlined)
+    else:
+        return 'D', 'none', 'none', 0, 0  # No marker
+
+def plot_lollipop_correlation_vs_tvl(metric_dataframes, tvl_data_path, metric='internal_influence', output_path="output/", min_occurrences=1, save=True, show=True):
+    # Extract internal influence data
+    influence_df = metric_dataframes['sample'][metric]
+
+    # Normalize the datetime format for influence DataFrame
+    influence_df.columns = pd.to_datetime(influence_df.columns).normalize()
+
+    # Load TVL data
+    with open(tvl_data_path, 'r') as file:
+        tvl_data = json.load(file)
+    tvl_df = pd.DataFrame(tvl_data)
+    tvl_df['date'] = pd.to_datetime(tvl_df['date'], unit='s')
+    tvl_df.set_index('date', inplace=True)
+
+    # Initialize a list to store correlations and p-values
+    correlations = []
+    pvals = []
+
+    # Iterate over each link (row)
+    for link in influence_df.index:
+        influence = influence_df.loc[link]
+        aligned_data = pd.concat([influence, tvl_df['tvl'].pct_change(1)], axis=1, join='inner').dropna()
+
+        if not aligned_data.empty and aligned_data.shape[0] > min_occurrences:
+            influence_aligned = aligned_data.iloc[:, 0]
+            tvl_aligned = aligned_data.iloc[:, 1]
+            correlation, pval = pearsonr(influence_aligned, tvl_aligned)
+            correlations.append(correlation)
+            pvals.append(pval)
+        else:
+            correlations.append(None)
+            pvals.append(None)
+
+    result_df = pd.DataFrame({
+        'Correlation': correlations,
+        'P-value': pvals
+    }, index=influence_df.index).dropna()
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.hlines(y=result_df.index, xmin=0, xmax=result_df['Correlation'], color='gray', alpha=0.5)
+    
+    for i, (corr, pval) in enumerate(zip(result_df['Correlation'], result_df['P-value'])):
+        marker, facecolor, edgecolor, edgewidth, size = pval_to_marker(pval)
+        if marker != 'None':
+            ax.scatter(corr, result_df.index[i], marker=marker, facecolor=facecolor, edgecolor=edgecolor, s=size**2, linewidths=edgewidth)
+
+    ax.set_xlabel("Correlation with TVL % Change")
+    ax.set_ylabel("Link")
+    ax.set_title(f"Lollipop Plot of {metric.replace('_', ' ').title()} Correlations vs. TVL % Change per Link")
+
+    # Create custom legend for significance levels
+    circle_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.01', markerfacecolor='black')
+    square_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.05', markerfacecolor='none', markeredgewidth=3)
+    diamond_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.1', markerfacecolor='none', markeredgewidth=2)
+
+    ax.legend(handles=[circle_patch, square_patch, diamond_patch], loc='lower right', title='Significance Levels')
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(os.path.join(output_path, "lollipop_correlation_vs_tvl.png"), format='png', dpi=300)
+    if show:
+        plt.show()
+
+
+#####################################
+###### TVL chart                 ####
+#####################################
+
+def plot_monthly_tvl(metric_dataframes, tvl_data_path, output_path="../output/tvl_monthly_chart.png", save=False, show=True):
+
+    # date_range = metric_dataframes['sample']['internal_influence'].columns
+
+    # Load TVL data
+    with open(tvl_data_path, 'r') as file:
+        tvl_data = json.load(file)
+    tvl_df = pd.DataFrame(tvl_data)
+    tvl_df['date'] = pd.to_datetime(tvl_df['date'], unit='s')
+    tvl_df.set_index('date', inplace=True)
+    
+
+    df = metric_dataframes['sample']['internal_influence']
+    # Convert index to datetime if not already
+    if not isinstance(df.columns, pd.DatetimeIndex):
+        df.columns = pd.to_datetime(df.columns)
+    # Resample to monthly values
+    monthly_tvl = tvl_df[tvl_df.index.isin(pd.to_datetime(df.columns))]
+
+    
+    # Plot
+    plt.figure(figsize=(12, 8))
+    
+    plt.plot(monthly_tvl.index, monthly_tvl['tvl'], marker='x', linestyle='-', color='black')
+    plt.fill_between(monthly_tvl.index, monthly_tvl['tvl'], color='black', alpha=0.1)
+    plt.title('Monthly TVL (Total Value Locked)', fontsize=14)
+    plt.xlabel('Date', fontsize=12)
+    plt.ylabel('TVL (USD)', fontsize=12)
+     # Ensure all x-axis dates are shown
+    plt.xticks(monthly_tvl.index, [date.strftime('%Y-%m') for date in monthly_tvl.index], rotation=90)
+   
+    plt.grid(True)
+    plt.tight_layout()
+    
+    # Save and/or show the plot
+    if save:
+        plt.savefig(output_path, bbox_inches='tight')
+    if show:
+        plt.show()
+
+
+
+#####################################
+###### Sensitivity Analysis      ####
+#####################################
+
+def sensitivity_analysis(file_paths, metrics, highlight_threshold='5e-06'):
+    def load_pickle_dynamic(file_path):
+        sys.modules['numpy._core'] = np.core
+        with open(file_path, 'rb') as file:
+            try:
+                data = pickle.load(file)
+            except ModuleNotFoundError as e:
+                print(f"ModuleNotFoundError: {e}")
+                data = pickle.load(file, encoding='latin1')
+        return data
+
+    data_frames = {path: load_pickle_dynamic(path) for path in file_paths}
+    combined_data = []
+
+    for path, data in data_frames.items():
+        threshold = path.split('_')[-1].split('.pkl')[0]  # Extract threshold level from the file path
+        threshold = threshold.replace('e-', 'e-')  # Ensure proper formatting
+        for date, pairs in data['sample'].items():
+            for pair, metrics_dict in pairs.items():
+                metrics_dict['threshold'] = threshold
+                metrics_dict['date'] = date
+                metrics_dict['pair'] = pair
+                combined_data.append(metrics_dict)
+
+    combined_df = pd.DataFrame(combined_data)
+    combined_df['threshold'] = pd.to_numeric(combined_df['threshold'], errors='coerce')
+    combined_df = combined_df.sort_values(by='threshold')
+
+    n_metrics = len(metrics)
+    n_cols = 2
+    n_rows = (n_metrics + n_cols - 1) // n_cols
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, n_rows * 6))  # Increased plot height
+    axes = axes.flatten()
+
+    for i, metric in enumerate(metrics):
+        ax = axes[i]
+        boxplot = combined_df.boxplot(column=metric, by='threshold', grid=False, patch_artist=True,
+                                      boxprops=dict(facecolor='white', color='black'),
+                                      medianprops=dict(color='red'),
+                                      whiskerprops=dict(color='black'),
+                                      capprops=dict(color='black'),
+                                      flierprops=dict(markerfacecolor='black', marker='o', markersize=1),
+                                      ax=ax, 
+                                      whis=3.0)  # Adjust whiskers to 3.0 times the IQR to reduce outlier detection as data is super skewed
+
+
+        ax.set_xlabel('Threshold Level')
+        ax.set_ylabel(metric.replace('_', ' ').title())
+        ax.set_title(f'{metric.replace("_", " ").title()}')
+
+        if metric in ['size', 'total_influence']:  # Assuming these metrics need log scale due to their nature
+            ax.set_yscale('log')
+        else:
+            ax.autoscale_view()  # Autoscale view to adjust for non-logarithmic data
+
+        ax.tick_params(axis='x', rotation=45)
+
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.suptitle('Box Plot of Metrics by Supply Threshold Level', fontsize=16)
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
+
+# Example usage remains the same
