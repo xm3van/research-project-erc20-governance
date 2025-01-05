@@ -26,15 +26,15 @@ COLORMAP = 'CMRmap'
 #####################################
 
 
-def plot_clique_size_over_time(metric_dataframes, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_clique_size_over_time(metric_dataframes, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     
     # Define df 
-    df = metric_dataframes[method][group]['size_clique']
+    df = metric_dataframes[method][group]['size']
     df_influenece = metric_dataframes[method][group]['total_influence']
 
     
     # common index
-    df_index = metric_dataframes['upper_bound']['sample']['size_clique']
+    df_index = metric_dataframes['weak_estimate']['sample']['size']
 
     # Find the index of the first occurrence (value > 1) in each column (snapshot)
     first_occurrence_indices = (df_index.T > 1).idxmax()
@@ -96,12 +96,12 @@ def plot_clique_size_over_time(metric_dataframes, method='upper_bound', group='s
 ######### Clique Growth #############
 #####################################
 
-def plot_clique_growth_over_time(metric_dataframes, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_clique_growth_over_time(metric_dataframes, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (12, 8)
 
     # Extract data
-    df = metric_dataframes[method][group]['size_clique']
+    df = metric_dataframes[method][group]['size']
 
     # Sort cliques by their average size
     cliques_order = df.mean(axis=1).sort_values(ascending=False).index
@@ -141,13 +141,13 @@ def plot_clique_growth_over_time(metric_dataframes, method='upper_bound', group=
 ###### Clique Growth Rate ###########
 #####################################
 
-def plot_clique_growth_rate_over_time(metric_dataframes, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_clique_growth_rate_over_time(metric_dataframes, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (12, 8)
     MEDIAN_LINE_STYLE = {'color': 'black', 'linewidth': 2, 'linestyle': '--', 'label': 'Median Growth Rate'}
 
     # Extract data
-    df = metric_dataframes[method][group]['size_clique']
+    df = metric_dataframes[method][group]['size']
 
     # Ensure columns are datetime objects and sort them
     df.columns = pd.to_datetime(df.columns)
@@ -206,12 +206,12 @@ def plot_clique_growth_rate_over_time(metric_dataframes, method='upper_bound', g
 #### Stability vs. No. of Tokens ####
 #####################################
 
-def plot_clique_stability_vs_no_of_tokens(metric_dataframes, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_clique_stability_vs_no_of_tokens(metric_dataframes, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (10, 6)
 
     # Extract data
-    df = metric_dataframes[method][group]['size_clique']
+    df = metric_dataframes[method][group]['size']
 
     # Calculate the mean size and stability (variance) for each clique
     no_of_tokens = np.array(([len(ast.literal_eval(clique)) for clique in df.index]))
@@ -248,12 +248,12 @@ def plot_clique_stability_vs_no_of_tokens(metric_dataframes, method='upper_bound
 #####################################
         
         
-def plot_clique_stability_vs_size(metric_dataframes, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_clique_stability_vs_size(metric_dataframes, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (10, 6)
 
     # Extract data
-    df = metric_dataframes[method]['sample']['size_clique']
+    df = metric_dataframes[method]['sample']['size']
 
     # Calculate the mean size and stability (variance) for each clique
     mean_size = df.mean(axis=1)
@@ -306,18 +306,18 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=True, outpu
     # Define df
     
     if log == True: 
-        df_u = np.log10(metric_dataframes['upper_bound']['sample'][metric_name]) * multiplier
-        df_l = np.log10(metric_dataframes['upper_bound']['sample'][metric_name]) * multiplier
+        df_u = np.log10(metric_dataframes['weak_estimate']['sample'][metric_name]) * multiplier
+        df_l = np.log10(metric_dataframes['strong_estimate']['sample'][metric_name]) * multiplier
         
     else: 
-        df_u = metric_dataframes['upper_bound']['sample'][metric_name] * multiplier
-        df_l = metric_dataframes['lower_bound']['sample'][metric_name] * multiplier
+        df_u = metric_dataframes['weak_estimate']['sample'][metric_name] * multiplier
+        df_l = metric_dataframes['strong_estimate']['sample'][metric_name] * multiplier
 
-    df_pv_u = metric_dataframes['upper_bound']['pvalues'][metric_name] 
-    df_pv_l = metric_dataframes['lower_bound']['pvalues'][metric_name]
+    df_pv_u = metric_dataframes['weak_estimate']['pvalues'][metric_name] 
+    df_pv_l = metric_dataframes['strong_estimate']['pvalues'][metric_name]
     
     # reindex
-    df_index = metric_dataframes['upper_bound']['sample'][metric_name] 
+    df_index = metric_dataframes['weak_estimate']['sample'][metric_name] 
 
         # Find the index of the first occurrence (value > 1) in each column (snapshot)
     first_occurrence_indices = (df_index.T > 0).idxmax()
@@ -429,8 +429,151 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=True, outpu
     if show:
         plt.show()
         
-        
-        
+#####################################
+###### Key Heatmap Directional ######
+#####################################        
+def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log=False, output_path="./output/cliques/", save=False, show=True):
+    FONT_SIZE_LABEL = 12
+    FONT_SIZE_TITLE = 14
+    FONT_SIZE_TEXT = 10
+    FONT_SIZE_VALUE = 10
+    FIG_SIZE = (20, 10)
+
+    if pct:
+        multiplier = 100
+        unit = '%'
+    else:
+        multiplier = 1
+        unit = ''
+
+    if log:
+        df_u = np.log10(metric_dataframes['weak_estimate']['sample_directional'][metric_name]) * multiplier
+        df_l = np.log10(metric_dataframes['strong_estimate']['sample_directional'][metric_name]) * multiplier
+    else:
+        df_u = metric_dataframes['weak_estimate']['sample_directional'][metric_name] * multiplier
+        df_l = metric_dataframes['strong_estimate']['sample_directional'][metric_name] * multiplier
+
+    df_pv_u = metric_dataframes['weak_estimate']['pvalues_directional'][metric_name]
+    df_pv_l = metric_dataframes['strong_estimate']['pvalues_directional'][metric_name]
+
+    # Reindex
+    df_index = metric_dataframes['weak_estimate']['sample_directional'][metric_name]
+
+    # Find the index of the first occurrence (value > 1) in each column (snapshot)
+    first_occurrence_indices = (df_index.T > 0).idxmax()
+
+    # Determine the minimum index (earliest occurrence) for each clique across all snapshots
+    min_indices = first_occurrence_indices.groupby(first_occurrence_indices.index).min()
+
+    # Sort the cliques based on their minimum indices to get the desired order
+    cliques_order = min_indices.sort_values().index.tolist()
+
+    # Reindex clique size to df
+    df_u = df_u.reindex(cliques_order[::-1])
+    df_l = df_l.reindex(cliques_order[::-1])
+    df_pv_u = df_pv_u.reindex(cliques_order[::-1])
+    df_pv_l = df_pv_l.reindex(cliques_order[::-1])
+
+    # Filter to keep only rows where the count of significant p-values > 3 in either upper or lower bound
+    significance_mask_u = df_pv_u.apply(lambda x: x.map(lambda y: pval_to_significance(y) != ''))
+    significance_mask_l = df_pv_l.apply(lambda x: x.map(lambda y: pval_to_significance(y) != ''))
+    significant_counts_u = significance_mask_u.sum(axis=1)
+    significant_counts_l = significance_mask_l.sum(axis=1)
+    df_u = df_u[(significant_counts_u > 3) | (significant_counts_l > 3)]
+    df_l = df_l.loc[df_u.index]
+    df_pv_u = df_pv_u.loc[df_u.index]
+    df_pv_l = df_pv_l.loc[df_u.index]
+
+    fig, ax = plt.subplots(figsize=FIG_SIZE)
+
+    # Create colormap
+    scaling_factor = df_u.max().max() * 1.2
+    cmap = plt.get_cmap("magma", lut=128)
+    norm = mcolors.Normalize(vmin=0, vmax=scaling_factor)
+
+    cell_width = 1  # as we're not using imshow, we can stick with unit width and height
+    cell_height = 1
+
+    for clique in df_u.index:
+        for date in df_u.columns:
+            value_u = df_u.loc[clique, date]
+            pval_u = df_pv_u.loc[clique, date]
+            pval_u = pval_to_significance(pval_u)
+
+            try:
+                value_l = df_l.loc[clique, date]
+                pval_l = df_pv_l.loc[clique, date]
+                pval_l = pval_to_significance(pval_l)
+            except:
+                pval_l = ''
+                value_l = np.nan
+
+            x_pos = df_u.columns.get_loc(date) * cell_width
+            y_pos = df_u.index.get_loc(clique) * cell_height
+
+            # Plotting the triangles
+            if not np.isnan(value_u):
+                # Calculate triangle vertices for 90-degree rotation
+                x1, y1 = x_pos, y_pos + cell_height
+                x2, y2 = x_pos, y_pos
+                x3, y3 = x_pos + cell_width, y_pos + cell_height
+
+                # Draw triangle
+                upper_triangle = patches.Polygon([(x1, y1), (x2, y2), (x3, y3)], closed=True, color=cmap(norm(value_u)), zorder=1)
+                ax.add_patch(upper_triangle)
+
+                # Calculate centroid
+                C_x = (x1 + x2 + x3) / 3 + 0.1  # last term manual adjustment
+                C_y = (y1 + y2 + y3) / 3 + 0.1  # last term manual adjustment
+
+                # Place text at centroid
+                ax.text(C_x, C_y, f'U:{round(value_u, 1) if not np.isnan(value_u) else ""}{unit}{pval_u}', ha='center', va='center', color='white', fontsize=FONT_SIZE_VALUE)
+
+            if not np.isnan(value_l):
+                # Calculate triangle vertices for 90-degree rotation
+                x1, y1 = x_pos + cell_width, y_pos
+                x2, y2 = x_pos + cell_width, y_pos + cell_height
+                x3, y3 = x_pos, y_pos
+
+                # Draw triangle
+                lower_triangle = patches.Polygon([(x1, y1), (x2, y2), (x3, y3)], closed=True, color=cmap(norm(value_l)), zorder=2)
+                ax.add_patch(lower_triangle)
+
+                # Calculate centroid
+                C_x = (x1 + x2 + x3) / 3 - 0.1  # last term manual adjustment
+                C_y = (y1 + y2 + y3) / 3 - 0.1  # last term manual adjustment
+
+                # Place text at centroid
+                ax.text(C_x, C_y, f'L:{round(value_l, 1) if not np.isnan(value_l) else ""}{unit}{pval_l}', ha='center', va='center', color='white', fontsize=FONT_SIZE_VALUE)
+
+    # Colorbar
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="1%", pad=0.1)
+    cbar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation='vertical')
+
+    # Significance box
+    plt.text(1.16, 0.98, 'Relative to Control:\n* = 0.1\n** = 0.05\n*** = 0.01',
+             transform=ax.transAxes, fontsize=FONT_SIZE_TEXT,
+             verticalalignment='top', horizontalalignment='right',
+             bbox=dict(facecolor='lightyellow', alpha=1, pad=12))
+
+    ax.set_xlim(0, len(df_u.columns))
+    ax.set_ylim(0, len(df_u.index))
+    ax.set_xlabel('Date', size=FONT_SIZE_LABEL)
+    ax.set_ylabel('Cliques', size=FONT_SIZE_LABEL)
+    ax.set_title(f'{metric_name.replace("_", " ").title()}', size=FONT_SIZE_TITLE)
+    ax.set_xticks(np.arange(len(df_u.columns)) + 0.5)
+    ax.set_xticklabels(df_u.columns, rotation=90, ha='center', size=FONT_SIZE_TEXT)
+    ax.set_yticks(np.arange(len(df_u.index)) + 0.5)
+    ax.set_yticklabels(df_u.index, size=FONT_SIZE_TEXT)
+    plt.grid(True)
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(f"{output_path}/{metric_name}_clique.png", bbox_inches='tight')
+
+    if show:
+        plt.show()       
         
         
 #####################################
@@ -438,7 +581,7 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=True, outpu
 #####################################
 
         
-def plot_boxplot_with_significance(metric_dataframes, metric, unit, method='upper_bound', group='sample', output_path="output/cliques/", save=True, show=True):
+def plot_boxplot_with_significance(metric_dataframes, metric, unit, method='weak_estimate', group='sample', output_path="output/cliques/", save=True, show=True):
     # Constants for aesthetics
     FIG_SIZE = (12, 8)
     COLOR_MAP = {'non-significant': 'lightgray', '0.05': 'yellow', '0.01': 'orange', '0.001': 'red'}
@@ -472,7 +615,7 @@ def plot_boxplot_with_significance(metric_dataframes, metric, unit, method='uppe
         boxplot['boxes'][i].set_facecolor(COLOR_MAP[significance])
 
     # Adding legend for significance
-    if metric == 'size_clique':
+    if metric == 'size':
         
         pass
         
@@ -482,7 +625,7 @@ def plot_boxplot_with_significance(metric_dataframes, metric, unit, method='uppe
 
     # Labels and Title
     metric_name_formatted = ' '.join(metric.split('_')).title()
-    naming_convention_grouping = 'Weakly' if method == 'upper_bound' else 'Strongly'
+    naming_convention_grouping = 'Weakly' if method == 'weak_estimate' else 'Strongly'
 
     ax.set_yticks(np.arange(1, len(cliques_order) + 1))
     ax.set_yticklabels(cliques_order)
@@ -562,7 +705,7 @@ def create_and_normalize_matrix(dataframe, label_column='Clique Name', short_lab
 
 
 
-def plot_heatmap_labels(metric_dataframes, method='upper_bound', group='sample', colormap='magma', output_path='output/cliques'):
+def plot_heatmap_labels(metric_dataframes, method='weak_estimate', group='sample', colormap='magma', output_path='output/cliques'):
     """
     Plot a heatmap from a dataframe.
 
@@ -606,7 +749,7 @@ def plot_heatmap_labels(metric_dataframes, method='upper_bound', group='sample',
     ax.set_xlabel('Labels', fontsize=18)
     ax.set_ylabel('Cliques', fontsize=18)
     
-    naming_convention_grouping = 'Weakly' if method == 'upper_bound' else 'Strongly'
+    naming_convention_grouping = 'Weakly' if method == 'weak_estimate' else 'Strongly'
     ax.set_title(f'Relative Control for {naming_convention_grouping}-defining Wallets of Total Influence by Label per Clique', fontsize=22)
 
     ax.set_xticks(np.arange(len(df.columns)))

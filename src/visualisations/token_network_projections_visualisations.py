@@ -107,8 +107,8 @@ def visualize_network_grid(graphs, dates, address_to_symbol, output_directory, l
         pos = layout(relabeled_graph)  
         
         # Draw the graph with relabeled nodes
-        nx.draw(relabeled_graph, pos, ax=ax, with_labels=True, node_size=50, node_color='skyblue', edge_color='gray', font_size=8)
-        ax.set_title(dates[snapshot], fontsize=10)
+        nx.draw(relabeled_graph, pos, ax=ax, with_labels=True, node_size=50, node_color='skyblue', edge_color='gray', font_size=12)
+        ax.set_title(dates[snapshot], fontsize=14)
         ax.set_axis_off()  # Hide axis for clarity
         
         # Draw a rectangle around the plot area
