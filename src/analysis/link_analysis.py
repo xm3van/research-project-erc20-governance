@@ -40,6 +40,7 @@ class LinkData:
         metric_names = [
             'size',
             'median_number_assets',
+            'internal_max_influence_label_distribution',
             'max_influence_label_distribution',
             'total_influence',
             'gini_total_influence',
@@ -189,6 +190,7 @@ class LinkAnalysis:
 
             # Labels
             self._analyze_labels()
+            self._analyze_labels_internal_influence()
 
         if self.directional == True:
             # Descriptive metrics
@@ -239,6 +241,24 @@ class LinkAnalysis:
 
         self.analysis_result['max_influence_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
         self.analysis_result_sample_population['max_influence_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
+
+
+    def _analyze_labels_internal_influence(self):
+        """
+        Analyzes the labels associated with the link.
+        """
+        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
+        self.sub_dataFrame_sample_population.fillna({'label': 'other_contracts'}, inplace=True)
+
+        # filter out entries for other token supplies 
+        df = self.sub_dataFrame.copy()
+        df = df[df.token_address.isin(self.link)]
+
+        self.analysis_result['internal_max_influence_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / len(self.link))
+        self.analysis_result_sample_population['internal_max_influence_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / len(self.link))
+
+
+
 
     ###############################
     ##### Influence Metrics #######

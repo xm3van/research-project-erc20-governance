@@ -24,7 +24,7 @@ df_token_price = pd.read_csv("data/price_table.csv", index_col=0)
 TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_enriched")
 VALIDATED_PROJECTIONS_INPUT_PATH = join(path, 'data/validated_token_projection_graphs')
 START_BLOCK_HEIGHT = 11659570
-SENSITIVITY_ANALYSIS = True #NOTE: False run with Reference value 0.000005 ~ 0.0005% of supply 
+SENSITIVITY_ANALYSIS = False #NOTE: False run with Reference value 0.000005 ~ 0.0005% of supply 
 REFERENCE_VALUE = 0.000005
 
 # remove burner addresses
@@ -161,8 +161,7 @@ if __name__ == "__main__":
 
     else:
         # search range 
-        # supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.00000005]
-        supply_thresholds = [0.00000005]
+        supply_thresholds = [0.05, 0.005, 0.0005, 0.00005, 0.000005, 0.0000005, 0.00000005]
 
         for supply_threshold in supply_thresholds: 
 

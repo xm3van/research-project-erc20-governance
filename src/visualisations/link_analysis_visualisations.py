@@ -408,7 +408,7 @@ def create_and_normalize_matrix(dataframe, label_column='Link Name', short_label
     return result_df
 
 
-def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', output_path='output/links', min_occurrences=9):
+def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='magma', output_path='output/links', min_occurrences=9):
     """
     Plot a heatmap from a dataframe, filtering links with a minimum number of occurrences.
 
@@ -436,7 +436,7 @@ def plot_heatmap_labels(metric_dataframes, group='sample', colormap='magma', out
     }
     
     # Get the raw data for the specified group
-    df_raw = metric_dataframes[group]['max_influence_label_distribution']
+    df_raw = metric_dataframes[group][metric]
 
     # Filter for links with at least `min_occurrences` non-NaN values
     link_occurrences = df_raw.notna().sum(axis=1)
@@ -564,6 +564,230 @@ def plot_lollipop_correlation_vs_tvl(metric_dataframes, tvl_data_path, metric='i
         plt.savefig(os.path.join(output_path, "lollipop_correlation_vs_tvl.png"), format='png', dpi=300)
     if show:
         plt.show()
+
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import numpy as np
+import pandas as pd
+import json
+from scipy.stats import pearsonr
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.stats.stattools import durbin_watson
+
+def plot_lollipop_correlation_vs_tvl_r(metric_dataframes, tvl_data_path, metric='internal_influence', output_path="output/", min_occurrences=1, save=True, show=True):
+    # Extract internal influence data
+    influence_df = metric_dataframes['sample'][metric]
+
+    # Normalize the datetime format for influence DataFrame
+    influence_df.columns = pd.to_datetime(influence_df.columns).normalize()
+
+    # Load TVL data
+    with open(tvl_data_path, 'r') as file:
+        tvl_data = json.load(file)
+    tvl_df = pd.DataFrame(tvl_data)
+    tvl_df['date'] = pd.to_datetime(tvl_df['date'], unit='s')
+    tvl_df.set_index('date', inplace=True)
+
+    # Initialize a list to store correlations, p-values, Durbin-Watson values, and Ljung-Box results
+    correlations = []
+    pvals = []
+    durbin_watson_stats = []
+    ljung_box_results = []
+
+    # Iterate over each link (row)
+    for link in influence_df.index:
+        influence = influence_df.loc[link]
+        aligned_data = pd.concat([influence, tvl_df['tvl'].pct_change(1)], axis=1, join='inner').dropna()
+
+        if not aligned_data.empty and aligned_data.shape[0] > min_occurrences:
+            influence_aligned = aligned_data.iloc[:, 0]
+            tvl_aligned = aligned_data.iloc[:, 1]
+            correlation, pval = pearsonr(influence_aligned, tvl_aligned)
+            correlations.append(correlation)
+            pvals.append(pval)
+            
+            # Perform Durbin-Watson Test
+            dw_stat = durbin_watson(influence_aligned)
+            durbin_watson_stats.append(dw_stat)
+            
+            # Perform Ljung-Box Q Test and handle potential errors
+            ljung_box_result = acorr_ljungbox(influence_aligned, lags=[min_occurrences], return_df=True)
+            ljung_box_pvalue = ljung_box_result.iloc[0]['lb_pvalue'] if not ljung_box_result.empty else None
+            ljung_box_results.append(ljung_box_pvalue)
+            
+        else:
+            correlations.append(None)
+            pvals.append(None)
+            durbin_watson_stats.append(None)
+            ljung_box_results.append(None)
+
+    result_df = pd.DataFrame({
+        'Correlation': correlations,
+        'P-value': pvals,
+        'Durbin-Watson': durbin_watson_stats,
+        'Ljung-Box P-value': ljung_box_results
+    }, index=influence_df.index).dropna()
+
+    # Plotting Lollipop Chart
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.hlines(y=result_df.index, xmin=0, xmax=result_df['Correlation'], color='gray', alpha=0.5)
+    
+    for i, (corr, pval) in enumerate(zip(result_df['Correlation'], result_df['P-value'])):
+        marker, facecolor, edgecolor, edgewidth, size = pval_to_marker(pval)
+        if marker != 'None':
+            ax.scatter(corr, result_df.index[i], marker=marker, facecolor=facecolor, edgecolor=edgecolor, s=size**2, linewidths=edgewidth)
+
+    ax.set_xlabel("Correlation with TVL % Change")
+    ax.set_ylabel("Link")
+    ax.set_title(f"Lollipop Plot of {metric.replace('_', ' ').title()} Correlations vs. TVL % Change per Link")
+
+    # Create custom legend for significance levels
+    circle_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.01', markerfacecolor='black')
+    square_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.05', markerfacecolor='none', markeredgewidth=3)
+    diamond_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.1', markerfacecolor='none', markeredgewidth=2)
+
+    ax.legend(handles=[circle_patch, square_patch, diamond_patch], loc='lower right', title='Significance Levels')
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(os.path.join(output_path, "lollipop_correlation_vs_tvl.png"), format='png', dpi=300)
+    if show:
+        plt.show()
+    
+    # Display ACF Plot for all links combined
+    fig, ax = plt.subplots(figsize=(10, 6))
+    combined_influence = influence_df.mean()
+    plot_acf(combined_influence.dropna(), ax=ax, lags=min_occurrences)
+    plt.title(f"Autocorrelation Plot for Average {metric.replace('_', ' ').title()}")
+    plt.show()
+
+    # Display results
+    print("\n===== Summary Statistics =====")
+    print(result_df)
+
+    # Generate and print the LaTeX table
+    latex_table = result_df.to_latex(float_format="%.4f", index=True, header=True, column_format="lrrrr", caption="Summary Statistics for Correlation and Autocorrelation Analysis", label="tab:summary_stats")
+    print("\n===== LaTeX Table =====")
+    print(latex_table)
+
+    return result_df
+
+
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import numpy as np
+import pandas as pd
+import json
+from scipy.stats import pearsonr
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.stats.stattools import durbin_watson
+
+def plot_lollipop_correlation_vs_tvl_adjusted_auto_corr(metric_dataframes, tvl_data_path, metric='internal_influence', output_path="output/", min_occurrences=1, save=True, show=True):
+    # Extract internal influence data
+    influence_df = metric_dataframes['sample'][metric]
+
+    # Normalize the datetime format for influence DataFrame
+    influence_df.columns = pd.to_datetime(influence_df.columns).normalize()
+
+    # Load TVL data
+    with open(tvl_data_path, 'r') as file:
+        tvl_data = json.load(file)
+    tvl_df = pd.DataFrame(tvl_data)
+    tvl_df['date'] = pd.to_datetime(tvl_df['date'], unit='s')
+    tvl_df.set_index('date', inplace=True)
+
+    # Initialize a list to store correlations, p-values, Durbin-Watson values, and Ljung-Box results
+    correlations = []
+    pvals = []
+    durbin_watson_stats = []
+    ljung_box_results = []
+
+    # Iterate over each link (row)
+    for link in influence_df.index:
+        influence = influence_df.loc[link]
+        # Apply first differencing to remove autocorrelation
+        influence_diff = influence.diff().dropna()
+        
+        aligned_data = pd.concat([influence_diff, tvl_df['tvl'].pct_change(1)], axis=1, join='inner').dropna()
+
+        if not aligned_data.empty and aligned_data.shape[0] > min_occurrences:
+            influence_aligned = aligned_data.iloc[:, 0]
+            tvl_aligned = aligned_data.iloc[:, 1]
+            correlation, pval = pearsonr(influence_aligned, tvl_aligned)
+            correlations.append(correlation)
+            pvals.append(pval)
+            
+            # Perform Durbin-Watson Test
+            dw_stat = durbin_watson(influence_aligned)
+            durbin_watson_stats.append(dw_stat)
+            
+            # Perform Ljung-Box Q Test and handle potential errors
+            ljung_box_result = acorr_ljungbox(influence_aligned, lags=[min_occurrences], return_df=True)
+            ljung_box_pvalue = ljung_box_result.iloc[0]['lb_pvalue'] if not ljung_box_result.empty else None
+            ljung_box_results.append(ljung_box_pvalue)
+            
+        else:
+            correlations.append(None)
+            pvals.append(None)
+            durbin_watson_stats.append(None)
+            ljung_box_results.append(None)
+
+    result_df = pd.DataFrame({
+        'Correlation': correlations,
+        'P-value': pvals,
+        'Durbin-Watson': durbin_watson_stats,
+        'Ljung-Box P-value': ljung_box_results
+    }, index=influence_df.index).dropna()
+
+    # Plotting Lollipop Chart
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.hlines(y=result_df.index, xmin=0, xmax=result_df['Correlation'], color='gray', alpha=0.5)
+    
+    for i, (corr, pval) in enumerate(zip(result_df['Correlation'], result_df['P-value'])):
+        marker, facecolor, edgecolor, edgewidth, size = pval_to_marker(pval)
+        if marker != 'None':
+            ax.scatter(corr, result_df.index[i], marker=marker, facecolor=facecolor, edgecolor=edgecolor, s=size**2, linewidths=edgewidth)
+
+    ax.set_xlabel("Correlation with TVL % Change")
+    ax.set_ylabel("Link")
+    ax.set_title(f"Lollipop Plot of {metric.replace('_', ' ').title()} Correlations vs. TVL % Change per Link")
+
+    # Create custom legend for significance levels
+    circle_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.01', markerfacecolor='black')
+    square_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.05', markerfacecolor='none', markeredgewidth=3)
+    diamond_patch = mlines.Line2D([], [], color='black', marker='D', markersize=10, label='p < 0.1', markerfacecolor='none', markeredgewidth=2)
+
+    ax.legend(handles=[circle_patch, square_patch, diamond_patch], loc='lower right', title='Significance Levels')
+
+    plt.tight_layout()
+
+    if save:
+        plt.savefig(os.path.join(output_path, "lollipop_correlation_vs_tvl_adjusted.png"), format='png', dpi=300)
+    if show:
+        plt.show()
+    
+    # Display ACF Plot for all links combined
+    fig, ax = plt.subplots(figsize=(10, 6))
+    combined_influence = influence_df.mean().diff().dropna()
+    plot_acf(combined_influence, ax=ax, lags=min_occurrences)
+    plt.title(f"Autocorrelation Plot for Average {metric.replace('_', ' ').title()} (Differenced)")
+    plt.show()
+
+    # Display results
+    print("\n===== Summary Statistics =====")
+    print(result_df)
+
+    # Generate and print the LaTeX table
+    latex_table = result_df.to_latex(float_format="%.4f", index=True, header=True, column_format="lrrrr", caption="Summary Statistics for Correlation and Autocorrelation Analysis (Adjusted)", label="tab:summary_stats_adjusted")
+    print("\n===== LaTeX Table =====")
+    print(latex_table)
+
+    return result_df
+
+
 
 
 #####################################
