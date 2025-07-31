@@ -333,7 +333,7 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=False, outp
 
 def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log=False, output_path="../output/links/", save=False, show=True, min_occurance=9):
     # Figure and font sizes
-    FIG_SIZE = (14, 10)   # (width, height) in inches
+    FIG_SIZE = (14, 14)   # (width, height) in inches
     FONT_SIZE_LABEL = 18   # For axis labels
     FONT_SIZE_TEXT = 14    # For tick labels and other text
     FONT_SIZE_VALUE = 14  # For cell annotations
@@ -356,11 +356,11 @@ def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log
     df_pv = metric_dataframes['pvalues_directional'][metric_name]
     
     # filter for relevant rows 
-    pval_filter = (df_pv <= 0.1).any(axis=1)==True
+    # pval_filter = (df_pv <= 0.1).any(axis=1)==True
     
     # updated frames 
-    df = df[pval_filter]
-    df_pv = df_pv[pval_filter]
+    # df = df[pval_filter]
+    # df_pv = df_pv[pval_filter]
 
     # Additional filtering criterion to exclude links appearing less than once
     # Calculate the number of non-zero occurrences for each row (clique)
@@ -445,7 +445,8 @@ def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log
 #####################################
 
 
-def plot_boxplot(metric_dataframes, metric, unit, group='sample', pval_group='pvalues', output_path="../output/links/", custom_index='', min_occurrences=9, significance=False, save=True, show=True):
+def plot_boxplot(metric_dataframes, metric, unit, group='sample', pval_group='pvalues', output_path="../output/links/", custom_index='', min_occurrences=9, metric_name=None, significance=False, save=True, show=True):
+
     # Constants for aesthetics
     FIG_SIZE = (10, 10)  # or (8, 5), etc.
     COLOR_MAP = {'non-significant': 'lightgray', '0.05': 'yellow', '0.01': 'orange', '0.001': 'red'}
@@ -497,7 +498,10 @@ def plot_boxplot(metric_dataframes, metric, unit, group='sample', pval_group='pv
             box.set_facecolor('lightgray')
 
     # Labels and Title
-    metric_name_formatted = ' '.join(metric.split('_')).title()
+    if metric_name: 
+        metric_name_formatted = metric_name
+    else: 
+        metric_name_formatted = ' '.join(metric.split('_')).title()
     ax.set_yticks(np.arange(1, len(df.index) + 1))
     ax.set_yticklabels(df.index, fontsize=14)
     ax.tick_params(axis='x', labelsize=14)  # X-axis tick labels
@@ -575,7 +579,7 @@ def create_and_normalize_matrix(dataframe, label_column='Link Name', short_label
 
 
 def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='magma',
-                        output_path='output/links', min_occurrences=9):
+                        output_path='output/links', min_occurrences=1):
     """
     Plot a heatmap from a dataframe, filtering links with a minimum number of occurrences.
     """
@@ -593,21 +597,33 @@ def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='mag
     # }
 
     short_readable_labels = {
-    'EMOA': 'EOAs',
-    'IEMOA': 'Institutions',
-    'PCV': 'Protocols',
-    'vesting_contract': 'Vesting',
-    'external_staking_contracts': 'Staking',
-    'lp_amm': 'Liquidity',
-    'lending_borrowing_contract': 'Lending',
-    'bridge_contract': 'Bridges',
-    'other_contracts': 'Other',
+        'EOA': 'EOAs',
+        'fund': 'Institutional Funds',
+        'fund-decentralized': 'Decentralized Funds',
+        'unknown_smart_contract': 'Unidentified Smart Contracts',
+        'dex': 'Decentralized Exchanges (DEXs)',
+        'lending-decentralized': 'DeFi Lending Platforms',
+        'mev-bot': 'MEV Bots',
+        'individual': 'Identified Individuals',
+        'smart-contract-platform': 'Smart Contract Platforms',
+        'misc': 'Miscellaneous',
+        'custodian': 'Custodians',
+        'bridge': 'Cross-chain Bridges',
+        'yield': 'Yield Farming Platforms',
+        'lending-centralized': 'Centralized Lending Platforms',
+        'stablecoin': 'Stablecoin Issuers',
+        'vesting_contract': 'Vesting Contracts',
+        'blockchain-scaling': 'L2 / Scaling Solutions',
+        'real-world-assets': 'Real-World Asset Tokens',
+        'hacker': 'Hacker Addresses',
+        'liquid-staking': 'Liquid Staking Protocols',
     }
+
 
     # Figure and font sizes
     FIG_SIZE = (12, 10)   # (width, height) in inches
     FONT_SIZE_LABEL = 18
-    FONT_SIZE_TEXT  = 14
+    FONT_SIZE_TEXT  = 8
 
     # 1. Get the raw data for the specified group
     df_raw = metric_dataframes[group][metric]

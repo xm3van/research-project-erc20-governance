@@ -156,4 +156,104 @@ def enrich_token_balance_tables(snapshot_selection_csv_path,
         print(f"Completed enriching of Token Balance Table {snapshot_block_height}")
 
 
+
+
+# ------------------------------------------------------------
+# helper: split “unknown” into EOA vs unknown_smart_contract
+# ------------------------------------------------------------
+def _split_unknowns(df, code_col="code", label_col="label"):
+    # normalise the code column to strings (handles None / NaN gracefully)
+    code_as_str = df[code_col].astype(str).str.strip()
+
+    # boolean masks
+    mask_unknown   = df[label_col] == "unknown"
+    mask_emptycode = code_as_str.isna() | (code_as_str == "b''") | (code_as_str == "")
+
+    # EOAs  → no bytecode
+    df.loc[mask_unknown & mask_emptycode, label_col] = "EOA"
+    # smart contracts with no match in reference sets
+    df.loc[mask_unknown & ~mask_emptycode, label_col] = "unknown_smart_contract"
+
+    return df
+
+def enrich_token_balance_tables_v2(snapshot_selection_csv_path, 
+                                token_list_csv_path, 
+                                label_list_csv_path,
+                                token_balance_dir, 
+                                output_dir, 
+                                from_block_height=11547458):
+    
+    # Load all snapshots block heights
+    df_snapshot_points = pd.read_csv(snapshot_selection_csv_path, index_col=0)
+    
+    df_token_list = pd.read_csv(token_list_csv_path, index_col=0)
+
+    df_labels = pd.read_csv(label_list_csv_path, index_col=0)
+    
+    
+    known_burner_addresses = ['0x0000000000000000000000000000000000000000',
+                        '0x0000000000000000000000000000000000000000',
+                        '0x0000000000000000000000000000000000000001',
+                        '0x0000000000000000000000000000000000000002',
+                        '0x0000000000000000000000000000000000000003',
+                        '0x0000000000000000000000000000000000000004',
+                        '0x0000000000000000000000000000000000000005',
+                        '0x0000000000000000000000000000000000000006',
+                        '0x0000000000000000000000000000000000000007',
+                        '0x000000000000000000000000000000000000dead']
+
+
+
+    
+    for snapshot_block_height in df_snapshot_points[df_snapshot_points['Block Height'] >= from_block_height]['Block Height']:
         
+        print(f"Commencing enriching of Token Balance Table {snapshot_block_height}")
+        
+        # Load relevant token balances for a given snapshot date
+        df_token_balance = pd.read_csv(join(token_balance_dir, f'token_holder_snapshot_balance_{snapshot_block_height}.csv'))
+        df_token_balance = df_token_balance[df_token_balance.token_address.isin(df_token_list.address)]
+        
+        # Filter negative balances 
+        df_token_balance = df_token_balance[df_token_balance.value > 0].copy()
+        
+        # remove know burner addresses - Note: We remove them before we calculated the supply
+        df_token_balance = df_token_balance[~df_token_balance.address.isin(known_burner_addresses)]
+        
+        # Update checksum address
+        df_token_balance['address_checksum'] = df_token_balance.address.str.lower()
+
+        # ─── bring in byte-code so we can distinguish EOAs ────────────────────────────
+        df_sc = (
+            pd.read_csv(join(token_balance_dir, "../unique_address_with_code.csv"), index_col=0)
+            .rename(columns={"address": "address_checksum"})
+        )
+        df_token_balance = df_token_balance.merge(
+            df_sc[["address_checksum", "code"]], how="left", on="address_checksum"
+        )
+
+
+        # calculate pct_supply on availble balances
+        df_token_balance['pct_supply'] = df_token_balance.groupby('token_address')['value'].transform(lambda x: x / x.sum())
+        
+        # Ensure address checksums are lowercase for consistent matching
+        df_labels['address_checksum'] = df_labels.address.str.lower()
+
+       # Merge and rename entity_type → label
+        df_token_balance = df_token_balance.merge(
+            df_labels[['address_checksum', 'entity_type']].rename(columns={'entity_type': 'label'}),
+            on='address_checksum',
+            how='left'
+        )
+
+        # Set unmatched entries to 'unknown'
+        df_token_balance['label'] = df_token_balance['label'].fillna('unknown')
+
+        # classify unknown
+        df_token_balance = _split_unknowns(df_token_balance)
+
+
+        # Save output
+        df_token_balance.to_csv(join(output_dir,       
+        f'token_holder_snapshot_balance_labelled_{snapshot_block_height}.csv'))
+        
+        print(f"Completed enriching of Token Balance Table {snapshot_block_height}")

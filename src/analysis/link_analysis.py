@@ -40,8 +40,8 @@ class LinkData:
         metric_names = [
             'size',
             'median_number_assets',
-            'internal_max_influence_label_distribution',
-            'max_influence_label_distribution',
+            'total_mean_pct_supply_label_distribution',
+            'mean_pct_supply_label_distribution',
             'total_influence',
             'gini_total_influence',
             'median_influence',
@@ -57,6 +57,7 @@ class LinkData:
             'gini_internal_wealth',
             'external_wealth',
             'gini_external_wealth'
+            'total_influence_directional'
         ]
         return metric_names
 
@@ -123,16 +124,33 @@ class LinkAnalysis:
         _calculate_gini_of_external_wealth(): Computes the Gini coefficient for the external wealth.
     """
 
-    def __init__(self, link, dataFrame, sub_dataFrame, sub_dataFrame_sample_population, token_lookup):
+    def __init__(self, link, 
+                 dataFrame, 
+                 sub_dataFrame, 
+                 sub_dataFrame_sample_population, 
+                 token_lookup,
+                 exclude_labels=None):
         self.link = link
         self.dataFrame = dataFrame
-        self.sub_dataFrame = sub_dataFrame
-        self.sub_dataFrame_sample_population = sub_dataFrame_sample_population
         self.token_lookup = token_lookup
         self.directional = False
         self.analysis_result = {}
         self.analysis_result_sample_population = {}
         self.pvalues = {}
+        
+        # ── NEW: one-shot label filter ───────────────────────────
+        if exclude_labels:
+            ex = {lbl.lower() for lbl in exclude_labels}
+            sub_dataFrame = sub_dataFrame[~sub_dataFrame.label.str.lower().isin(ex)].copy()
+            sub_dataFrame_sample_population = (
+                sub_dataFrame_sample_population[
+                    ~sub_dataFrame_sample_population.label.str.lower().isin(ex)
+                ].copy()
+            )
+
+        self.sub_dataFrame = sub_dataFrame
+        self.sub_dataFrame_sample_population = sub_dataFrame_sample_population
+
 
     def link_member_wallets(self):
         """
@@ -161,6 +179,7 @@ class LinkAnalysis:
             self._calculate_size()
             self._calculate_median_token_holding_count()
             self._analyze_labels()
+            self._analyze_labels_internal_influence()
 
             # Influence metrics
             ## Total Influence
@@ -171,14 +190,15 @@ class LinkAnalysis:
             self._calculate_internal_influence()
             self._calculate_gini_of_internal_influence()
             ## external influence 
-            self._calculate_external_influence()
-            self._calculate_gini_of_external_influence()
+            # self._calculate_external_influence()
+            # self._calculate_gini_of_external_influence()
 
             # Wealth metrics
             ## Total wealth
             self._calculate_total_wealth()
             self._calculate_gini_of_total_wealth()
             self._calculate_median_wealth()
+            self._calculate_median_internal_wealth()
 
             ## Internal wealth
             self._calculate_internal_wealth()
@@ -200,6 +220,7 @@ class LinkAnalysis:
 
             # Influence metrics
             self._calculate_total_influence_directional()
+            self._calculate_internal_influence_directional()
             self._calculate_gini_of_total_influence()
 
             # Wealth metrics
@@ -236,26 +257,29 @@ class LinkAnalysis:
         """
         Analyzes the labels associated with the link.
         """
-        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
-        self.sub_dataFrame_sample_population.fillna({'label': 'other_contracts'}, inplace=True)
+        self.sub_dataFrame.fillna({'label': 'unknown'}, inplace=True)
+        self.sub_dataFrame_sample_population.fillna({'label': 'unknown'}, inplace=True)
 
-        self.analysis_result['max_influence_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
-        self.analysis_result_sample_population['max_influence_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
+        self.analysis_result['total_mean_pct_supply_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
+        self.analysis_result_sample_population['total_mean_pct_supply_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / self.dataFrame.token_address.nunique())
 
 
     def _analyze_labels_internal_influence(self):
         """
         Analyzes the labels associated with the link.
         """
-        self.sub_dataFrame.fillna({'label': 'other_contracts'}, inplace=True)
-        self.sub_dataFrame_sample_population.fillna({'label': 'other_contracts'}, inplace=True)
+        self.sub_dataFrame.fillna({'label': 'unknown'}, inplace=True)
+        self.sub_dataFrame_sample_population.fillna({'label': 'unknown'}, inplace=True)
 
         # filter out entries for other token supplies 
         df = self.sub_dataFrame.copy()
         df = df[df.token_address.isin(self.link)]
 
-        self.analysis_result['internal_max_influence_label_distribution'] = dict(self.sub_dataFrame.groupby(['label'])['pct_supply'].sum() / len(self.link))
-        self.analysis_result_sample_population['internal_max_influence_label_distribution'] = dict(self.sub_dataFrame_sample_population.groupby(['label'])['pct_supply'].sum() / len(self.link))
+        df_c = self.sub_dataFrame_sample_population.copy()
+        df_c = df_c[df_c.token_address.isin(self.link)]
+
+        self.analysis_result['mean_pct_supply_label_distribution'] = dict(df.groupby(['label'])['pct_supply'].sum() / len(self.link))
+        self.analysis_result_sample_population['mean_pct_supply_label_distribution'] = dict(df_c.groupby(['label'])['pct_supply'].sum() / len(self.link))
 
 
 
@@ -370,6 +394,21 @@ class LinkAnalysis:
         self.analysis_result_sample_population['total_influence_directional'] = normalised_pct_supplyC.sum()
         self.pvalues['total_influence_directional'] = normalised_pct_link_pval
 
+    def _calculate_internal_influence_directional(self):
+        """
+        Computes the directional total influence of the link.
+        """
+    
+
+
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['pct_supply'].sum() / len(self.link)
+        nnormalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='mean', alternative='greater')
+
+        self.analysis_result['internal_influence_directional'] = normalised_pct_supply_internal.sum()
+        self.analysis_result_sample_population['total_influence_directional'] = normalised_pct_supply_internalC.sum()
+        self.pvalues['total_influence_directional'] = nnormalised_pct_link_pval
+
     ###########################
     ##### Wealth Metrics ######
     ###########################
@@ -421,6 +460,18 @@ class LinkAnalysis:
         self.analysis_result['internal_wealth'] = normalised_pct_supply_internal.sum()
         self.analysis_result_sample_population['internal_wealth'] = normalised_pct_supply_internalC.sum()
         self.pvalues['internal_wealth'] = normalised_pct_link_pval
+
+    def _calculate_median_internal_wealth(self):
+        """
+        Computes the internal wealth of the link (value of tokens that are part of the link).
+        """
+        normalised_pct_supply_internal = self.sub_dataFrame[self.sub_dataFrame.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_supply_internalC = self.sub_dataFrame_sample_population[self.sub_dataFrame_sample_population.token_address.isin(self.link)].groupby('address')['value_usd'].sum()
+        normalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='median', alternative='greater')
+
+        self.analysis_result['internal_median_wealth'] = normalised_pct_supply_internal.median()
+        self.analysis_result_sample_population['internal_median_wealth'] = normalised_pct_supply_internalC.median()
+        self.pvalues['internal_median_wealth'] = normalised_pct_link_pval
 
     def _calculate_gini_of_internal_wealth(self):
         """
