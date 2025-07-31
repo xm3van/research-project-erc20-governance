@@ -22,7 +22,7 @@ path = os.environ['DATA_DIRECTORY']
 # Constants
 SNAPSHOT_CSV_PATH = 'data/snapshot_selection.csv'
 ADDRESS_CSV_PATH = 'data/final_token_selection.csv'
-OUTPUT_PATH = join(path, 'data/validated_token_projection_graphs')
+OUTPUT_PATH = join(path, 'data/token_projection_test')
 
 KNOWN_BURNER_ADDRESSES = [
     '0x0000000000000000000000000000000000000000', '0x000000000000000000000000000000000000dead',
@@ -32,8 +32,11 @@ KNOWN_BURNER_ADDRESSES = [
     '0x0000000000000000000000000000000000000007'
 ]
 
+# remove CEX labels 
+                     
+df_labels = pd.read_excel("archive/manual.xlsx")
 
-
+address_not_to_include =  df_labels[(df_labels['entity_type']!= 'individual')& (df_labels['entity_type']!= 'hacker') & (df_labels['entity_type']!= 'fund')].address.str.lower()
 
 # Main function to load, process data, and generate network graphs
 def generate_network_graphs():
@@ -42,7 +45,7 @@ def generate_network_graphs():
     for snapshot in df_snapshot[df_snapshot['Block Height']>=11659570]['Block Height']:
         ddf = pd.read_csv(join(path, f'data/snapshot_token_balance_tables_enriched/token_holder_snapshot_balance_labelled_{snapshot}.csv'))
         ddf = ddf[ddf['value'] > 0]
-        ddf = ddf[~ddf['address'].isin(KNOWN_BURNER_ADDRESSES)]
+        ddf = ddf[(~ddf['address'].isin(KNOWN_BURNER_ADDRESSES)) &  (~ddf['address'].str.lower().isin(address_not_to_include))]
         ddf = ddf[ddf['token_address'].isin(df_addresses['address'])]
         
         present_addresses = ddf['token_address'].unique()

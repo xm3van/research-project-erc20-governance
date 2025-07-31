@@ -16,16 +16,54 @@ import multiprocessing
 
 load_dotenv()
 
+import logging
+
+# Set up logging to file and console
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s — %(levelname)s — %(message)s",
+    handlers=[
+        logging.FileHandler("debug_link_analysis_log.txt", mode='w'),
+        logging.StreamHandler()
+    ]
+)
+
+
 path = os.environ['DATA_DIRECTORY']
 df_snapshots = pd.read_csv('data/snapshot_selection.csv')
 df_tokens = pd.read_csv("data/final_token_selection.csv")
 df_token_price = pd.read_csv("data/price_table.csv", index_col=0)
 
-TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_enriched")
+TOKEN_BALANCE_TABLE_INPUT_PATH = join(path, "data/snapshot_token_balance_tables_enriched_v2")
 VALIDATED_PROJECTIONS_INPUT_PATH = join(path, 'data/validated_token_projection_graphs')
 START_BLOCK_HEIGHT = 11659570
 SENSITIVITY_ANALYSIS = False #NOTE: False run with Reference value 0.000005 ~ 0.0005% of supply 
 REFERENCE_VALUE = 0.000005
+EXCLUSION_LABELS = [ # set to NONE if no adjustment is wanted 
+    # "EOA",
+    "cex",
+    # "fund",
+    # "unknown_smart_contract",
+    # "dex",
+    # "lending-decentralized",
+    # "mev-bot",
+    # "individual",
+    # "smart-contract-platform",
+    # "misc",
+    # "custodian",
+    # "bridge",
+    # "yield",
+    # "lending-centralized",
+    # "stablecoin",
+    # "vesting-contract",
+    # "blockchain-scaling",
+    # "real-world-assets",
+    # "fund-decentralized",
+    # "hacker",
+    # "liquid-staking",
+]
+
+
 
 # remove burner addresses
 known_burner_addresses = ['0x0000000000000000000000000000000000000000',
@@ -39,6 +77,7 @@ known_burner_addresses = ['0x0000000000000000000000000000000000000000',
                           '0x0000000000000000000000000000000000000007',
                           '0x000000000000000000000000000000000000dead']
 
+
 def analyze_link(link, ddf, token_lookup):
     results = {}
     results_sample_population = {}
@@ -47,18 +86,29 @@ def analyze_link(link, ddf, token_lookup):
     results_sample_population_directional = {}
     pvalues_directional = {}
 
-    analyzer = LinkAnalysis(link, ddf, None, None, token_lookup)
+    ex = {lbl.lower() for lbl in EXCLUSION_LABELS}
+    ddf_filtered = ddf[~ddf.label.str.lower().isin(ex)].copy()
+
+    analyzer = LinkAnalysis(link, ddf_filtered, ddf_filtered.copy(), ddf_filtered.copy(), token_lookup, exclude_labels=EXCLUSION_LABELS)
     analyzer.directional = False
     link_members_unique = analyzer.link_member_wallets()
 
+    token_symbols = [token_lookup.get(t, t) for t in link]
+
     if not link_members_unique:
+        logging.warning(f"[SKIPPED] Link {token_symbols} — No link members found after filtering.")
+        for token in link:
+            label_counts = ddf[ddf.token_address == token].label.value_counts()
+            logging.info(f"Label breakdown for {token_lookup.get(token, token)}:\n{label_counts.to_string()}")
         return None
 
-    filter1 = ddf.address.isin(link_members_unique)
+    ddf_sample = ddf_filtered[ddf_filtered.address.isin(link_members_unique)].copy()
+    if ddf_sample.empty:
+        logging.warning(f"[SKIPPED] Link {token_symbols} — All link members filtered out (label or supply threshold).")
+        logging.info(f"Filtered member count: {len(link_members_unique)}")
+        return None
 
-    ddf_sample = ddf[filter1].copy()
-    ddf_sample_population = ddf.copy()
-
+    ddf_sample_population = ddf_filtered.copy()
     analyzer.sub_dataFrame = ddf_sample
     analyzer.sub_dataFrame_sample_population = ddf_sample_population
     link_name, res, res_sample_population, pvals = analyzer.analyze_link()
@@ -68,15 +118,18 @@ def analyze_link(link, ddf, token_lookup):
     pvalues[str(link_name)] = pvals
 
     for token in link:
-        filter1 = ddf.token_address == token
-        filter2 = ddf.address.isin(link_members_unique)
-
-        ddf_sample_directional = ddf[filter1 & filter2].copy()
         token_name = token_lookup[token]
+        f1 = ddf_filtered.token_address == token
+        f2 = ddf_filtered.address.isin(link_members_unique)
 
-        ddf_sample_population_directional = ddf[filter1].copy()
+        ddf_sample_directional = ddf_filtered[f1 & f2].copy()
+        ddf_sample_population_directional = ddf_filtered[f1].copy()
 
-        analyzer_directional = LinkAnalysis(link, ddf, ddf_sample_directional, ddf_sample_population_directional, token_lookup)
+        if ddf_sample_directional.empty:
+            logging.warning(f"[SKIPPED DIRECTIONAL] {token_symbols} → {token_name}: No eligible holders.")
+            continue
+
+        analyzer_directional = LinkAnalysis(link, ddf_filtered, ddf_sample_directional, ddf_sample_population_directional, token_lookup, exclude_labels=EXCLUSION_LABELS)
         analyzer_directional.directional = True
         link_name, res, res_sample_population, pvals = analyzer_directional.analyze_link()
 
@@ -85,6 +138,57 @@ def analyze_link(link, ddf, token_lookup):
         pvalues_directional[f'{link_name}: {token_name}'] = pvals
 
     return (results, results_sample_population, pvalues, results_directional, results_sample_population_directional, pvalues_directional)
+
+# def analyze_link(link, ddf, token_lookup):
+#     results = {}
+#     results_sample_population = {}
+#     pvalues = {}
+#     results_directional = {}
+#     results_sample_population_directional = {}
+#     pvalues_directional = {}
+
+#     ex = {lbl.lower() for lbl in EXCLUSION_LABELS}
+#     ddf_filtered = ddf[~ddf.label.str.lower().isin(ex)].copy()
+
+
+#     analyzer = LinkAnalysis(link, ddf_filtered, ddf_filtered.copy(), ddf_filtered.copy(), token_lookup, exclude_labels=EXCLUSION_LABELS)
+#     analyzer.directional = False
+#     link_members_unique = analyzer.link_member_wallets()
+
+#     if not link_members_unique:
+#         return None
+
+#     filter1 = ddf_filtered.address.isin(link_members_unique)
+
+#     ddf_sample = ddf_filtered[filter1].copy()
+#     ddf_sample_population = ddf_filtered.copy()
+
+#     analyzer.sub_dataFrame = ddf_sample
+#     analyzer.sub_dataFrame_sample_population = ddf_sample_population
+#     link_name, res, res_sample_population, pvals = analyzer.analyze_link()
+
+#     results[str(link_name)] = res
+#     results_sample_population[str(link_name)] = res_sample_population
+#     pvalues[str(link_name)] = pvals
+
+#     for token in link:
+#         filter1 = ddf_filtered.token_address == token
+#         filter2 = ddf_filtered.address.isin(link_members_unique)
+
+#         ddf_sample_directional = ddf_filtered[filter1 & filter2].copy()
+#         token_name = token_lookup[token]
+
+#         ddf_sample_population_directional = ddf_filtered[filter1].copy()
+
+#         analyzer_directional = LinkAnalysis(link, ddf_filtered, ddf_sample_directional, ddf_sample_population_directional, token_lookup, exclude_labels=EXCLUSION_LABELS)
+#         analyzer_directional.directional = True
+#         link_name, res, res_sample_population, pvals = analyzer_directional.analyze_link()
+
+#         results_directional[f'{link_name}: {token_name}'] = res
+#         results_sample_population_directional[f'{link_name}: {token_name}'] = res_sample_population
+#         pvalues_directional[f'{link_name}: {token_name}'] = pvals
+
+#     return (results, results_sample_population, pvalues, results_directional, results_sample_population_directional, pvalues_directional)
 
 def process_snapshot(snapshot_data, supply_threshold=REFERENCE_VALUE):
     snapshot_date, snapshot_block_height, df_tokens, df_token_price = snapshot_data
@@ -151,7 +255,7 @@ if __name__ == "__main__":
         links = links_main()  # Store the returned links dictionary
 
         # Specify the path to save the links data
-        output_path = join(path, 'output/links/metrics/links_data.pkl')
+        output_path = join(path, 'output/links/metrics/links_data_v3.pkl')
 
         # Serialize and save the links dictionary
         with open(output_path, 'wb') as handle:
@@ -169,7 +273,7 @@ if __name__ == "__main__":
 
 
             cliques = links_main(supply_threshold)
-            output_path = join(path, f'output/links/metrics/links_data_{supply_threshold}.pkl')
+            output_path = join(path, f'output/links/metrics/links_data_{supply_threshold}_v3.pkl')
 
             with open(output_path, 'wb') as handle:
                 pickle.dump(cliques, handle, protocol=pickle.HIGHEST_PROTOCOL)
