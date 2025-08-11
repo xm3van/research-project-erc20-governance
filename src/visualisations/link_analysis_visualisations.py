@@ -327,6 +327,8 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=False, outp
     if show:
         plt.show()
 
+    return cliques_order
+
 #####################################
 ### Key Heatmap Directional Chart ###
 #####################################
@@ -518,6 +520,7 @@ def plot_boxplot(metric_dataframes, metric, unit, group='sample', pval_group='pv
     if show:
         plt.show()
 
+
         
         
 #####################################
@@ -579,7 +582,7 @@ def create_and_normalize_matrix(dataframe, label_column='Link Name', short_label
 
 
 def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='magma',
-                        output_path='output/links', min_occurrences=1):
+                        output_path='output/links', min_occurrences=1, custom_index=None):
     """
     Plot a heatmap from a dataframe, filtering links with a minimum number of occurrences.
     """
@@ -597,6 +600,7 @@ def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='mag
     # }
 
     short_readable_labels = {
+        'cex': 'Centralized Exchanges (CEXs)',
         'EOA': 'EOAs',
         'fund': 'Institutional Funds',
         'fund-decentralized': 'Decentralized Funds',
@@ -627,6 +631,9 @@ def plot_heatmap_labels(metric_dataframes, metric, group='sample', colormap='mag
 
     # 1. Get the raw data for the specified group
     df_raw = metric_dataframes[group][metric]
+
+    if custom_index: 
+        df_raw = metric_dataframes[group][metric].loc[custom_index]
 
     # 2. Filter for links with at least `min_occurrences` non-NaN values
     link_occurrences = df_raw.notna().sum(axis=1)

@@ -1,0 +1,308 @@
+2025-08-10 18:18:10,461 — WARNING — [SKIPPED] Link ['INST', 'MKR'] — No link members found after filtering.
+2025-08-10 18:18:10,471 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,479 — INFO — Label breakdown for MKR:
+label
+unknown_smart_contract    1953
+cex                         47
+EOA                         24
+fund                        17
+misc                         3
+lending-decentralized        2
+fund-decentralized           1
+yield                        1
+mev-bot                      1
+lending-centralized          1
+individual                   1
+dex                          1
+2025-08-10 18:18:10,480 — WARNING — [SKIPPED] Link ['INST', 'COMP'] — No link members found after filtering.
+2025-08-10 18:18:10,493 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,506 — INFO — Label breakdown for COMP:
+label
+unknown_smart_contract     586
+cex                         42
+EOA                         27
+fund                        18
+misc                         2
+fund-decentralized           2
+dex                          2
+yield                        1
+smart-contract-platform      1
+mev-bot                      1
+lending-centralized          1
+individual                   1
+lending-decentralized        1
+bridge                       1
+2025-08-10 18:18:10,526 — WARNING — [SKIPPED] Link ['UNI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:10,534 — INFO — Label breakdown for UNI:
+label
+unknown_smart_contract     898
+cex                         56
+EOA                         32
+fund                        14
+misc                         5
+individual                   3
+lending-decentralized        3
+fund-decentralized           2
+smart-contract-platform      2
+yield                        1
+mev-bot                      1
+lending-centralized          1
+bridge                       1
+dex                          1
+2025-08-10 18:18:10,544 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,560 — WARNING — [SKIPPED] Link ['1INCH', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:10,576 — INFO — Label breakdown for 1INCH:
+label
+unknown_smart_contract    407
+cex                        32
+EOA                        12
+fund                        6
+dex                         2
+custodian                   1
+fund-decentralized          1
+mev-bot                     1
+misc                        1
+bridge                      1
+2025-08-10 18:18:10,600 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,632 — WARNING — [SKIPPED] Link ['SUSHI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:10,654 — INFO — Label breakdown for SUSHI:
+label
+unknown_smart_contract     1104
+cex                          37
+EOA                          33
+fund                         23
+misc                          5
+smart-contract-platform       3
+dex                           2
+lending-decentralized         2
+yield                         2
+mev-bot                       1
+individual                    1
+custodian                     1
+bridge                        1
+2025-08-10 18:18:10,667 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,671 — WARNING — [SKIPPED] Link ['YFI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:10,705 — INFO — Label breakdown for YFI:
+label
+unknown_smart_contract     2516
+cex                          47
+EOA                          44
+fund                         19
+yield                         4
+misc                          4
+smart-contract-platform       3
+lending-decentralized         2
+dex                           2
+fund-decentralized            1
+mev-bot                       1
+bridge                        1
+2025-08-10 18:18:10,717 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:10,735 — WARNING — [SKIPPED] Link ['INST', 'AAVE'] — No link members found after filtering.
+2025-08-10 18:18:10,748 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:11,323 — INFO — Label breakdown for AAVE:
+label
+unknown_smart_contract     2242
+cex                          45
+EOA                          38
+fund                         20
+misc                          4
+lending-decentralized         3
+smart-contract-platform       3
+fund-decentralized            2
+yield                         2
+dex                           2
+mev-bot                       1
+bridge                        1
+individual                    1
+2025-08-10 18:18:40,897 — WARNING — [SKIPPED] Link ['YFI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:40,914 — INFO — Label breakdown for YFI:
+label
+unknown_smart_contract     2781
+cex                          54
+EOA                          53
+fund                         17
+yield                         4
+misc                          4
+smart-contract-platform       4
+lending-decentralized         2
+dex                           2
+bridge                        2
+fund-decentralized            1
+mev-bot                       1
+lending-centralized           1
+2025-08-10 18:18:40,923 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:40,953 — WARNING — [SKIPPED] Link ['INST', 'AAVE'] — No link members found after filtering.
+2025-08-10 18:18:40,977 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:40,993 — INFO — Label breakdown for AAVE:
+label
+unknown_smart_contract     2186
+cex                          54
+EOA                          43
+fund                         19
+misc                          4
+smart-contract-platform       4
+lending-decentralized         3
+dex                           3
+fund-decentralized            2
+yield                         2
+bridge                        2
+custodian                     1
+mev-bot                       1
+2025-08-10 18:18:41,637 — WARNING — [SKIPPED] Link ['INST', 'MKR'] — No link members found after filtering.
+2025-08-10 18:18:41,643 — WARNING — [SKIPPED] Link ['INST', 'COMP'] — No link members found after filtering.
+2025-08-10 18:18:41,645 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:41,645 — WARNING — [SKIPPED] Link ['UNI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:41,645 — WARNING — [SKIPPED] Link ['1INCH', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:41,653 — INFO — Label breakdown for 1INCH:
+label
+unknown_smart_contract     442
+cex                         37
+EOA                         16
+fund                         5
+smart-contract-platform      2
+custodian                    1
+fund-decentralized           1
+individual                   1
+mev-bot                      1
+misc                         1
+bridge                       1
+dex                          1
+2025-08-10 18:18:41,653 — INFO — Label breakdown for MKR:
+label
+unknown_smart_contract    1932
+cex                         51
+EOA                         20
+fund                        13
+misc                         4
+individual                   2
+fund-decentralized           2
+lending-decentralized        2
+dex                          2
+custodian                    1
+yield                        1
+mev-bot                      1
+lending-centralized          1
+2025-08-10 18:18:41,656 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:41,656 — INFO — Label breakdown for UNI:
+label
+unknown_smart_contract     891
+cex                         63
+EOA                         33
+fund                        19
+misc                         5
+individual                   4
+fund-decentralized           2
+lending-decentralized        2
+smart-contract-platform      2
+yield                        1
+mev-bot                      1
+bridge                       1
+dex                          1
+2025-08-10 18:18:41,657 — WARNING — [SKIPPED] Link ['SUSHI', 'INST'] — No link members found after filtering.
+2025-08-10 18:18:41,658 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:41,662 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:18:41,666 — INFO — Label breakdown for COMP:
+label
+unknown_smart_contract     584
+cex                         50
+EOA                         27
+fund                        21
+individual                   3
+misc                         2
+fund-decentralized           2
+dex                          2
+custodian                    1
+yield                        1
+smart-contract-platform      1
+mev-bot                      1
+lending-centralized          1
+lending-decentralized        1
+bridge                       1
+2025-08-10 18:18:41,670 — INFO — Label breakdown for SUSHI:
+label
+unknown_smart_contract     1269
+cex                          44
+EOA                          33
+fund                         20
+individual                    5
+misc                          5
+smart-contract-platform       4
+dex                           2
+lending-decentralized         2
+yield                         2
+bridge                        2
+mev-bot                       1
+custodian                     1
+2025-08-10 18:18:41,675 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    1
+2025-08-10 18:20:23,857 — WARNING — [SKIPPED] Link ['BIT', 'INST'] — No link members found after filtering.
+2025-08-10 18:20:23,890 — INFO — Label breakdown for BIT:
+label
+unknown_smart_contract    1
+2025-08-10 18:20:23,920 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract    49
+2025-08-10 18:22:26,357 — WARNING — [SKIPPED] Link ['CVX', 'INST'] — No link members found after filtering.
+2025-08-10 18:22:26,389 — INFO — Label breakdown for CVX:
+label
+unknown_smart_contract    314
+EOA                         2
+cex                         1
+lending-decentralized       1
+yield                       1
+fund                        1
+2025-08-10 18:22:26,414 — INFO — Label breakdown for INST:
+label
+unknown_smart_contract     251
+cex                          2
+smart-contract-platform      1
+individual                   1
+EOA                          1
+2025-08-10 18:36:28,506 — WARNING — [SKIPPED] Link ['LDO', 'AURA'] — No link members found after filtering.
+2025-08-10 18:36:28,516 — INFO — Label breakdown for LDO:
+label
+unknown_smart_contract     1040
+EOA                          26
+cex                          16
+fund                          9
+individual                    6
+yield                         1
+bridge                        1
+smart-contract-platform       1
+liquid-staking                1
+misc                          1
+vesting_contract              1
+blockchain-scaling            1
+dex                           1
+2025-08-10 18:36:28,529 — INFO — Label breakdown for AURA:
+label
+unknown_smart_contract    186
+individual                  1
+EOA                         1

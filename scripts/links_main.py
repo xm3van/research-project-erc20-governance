@@ -41,7 +41,7 @@ SENSITIVITY_ANALYSIS = False #NOTE: False run with Reference value 0.000005 ~ 0.
 REFERENCE_VALUE = 0.000005
 EXCLUSION_LABELS = [ # set to NONE if no adjustment is wanted 
     # "EOA",
-    "cex",
+    # "cex",
     # "fund",
     # "unknown_smart_contract",
     # "dex",
@@ -97,9 +97,9 @@ def analyze_link(link, ddf, token_lookup):
 
     if not link_members_unique:
         logging.warning(f"[SKIPPED] Link {token_symbols} — No link members found after filtering.")
-        for token in link:
-            label_counts = ddf[ddf.token_address == token].label.value_counts()
-            logging.info(f"Label breakdown for {token_lookup.get(token, token)}:\n{label_counts.to_string()}")
+        # for token in link:
+        #     label_counts = ddf[ddf.token_address == token].label.value_counts()
+            # logging.info(f"Label breakdown for {token_lookup.get(token, token)}:\n{label_counts.to_string()}")
         return None
 
     ddf_sample = ddf_filtered[ddf_filtered.address.isin(link_members_unique)].copy()
