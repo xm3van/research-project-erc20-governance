@@ -331,113 +331,279 @@ def plot_heatmap_chart(metric_dataframes, metric_name, pct=True, log=False, outp
 
 #####################################
 ### Key Heatmap Directional Chart ###
-#####################################
+# #####################################
 
-def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log=False, output_path="../output/links/", save=False, show=True, min_occurance=9):
-    # Figure and font sizes
-    FIG_SIZE = (14, 14)   # (width, height) in inches
-    FONT_SIZE_LABEL = 18   # For axis labels
-    FONT_SIZE_TEXT = 14    # For tick labels and other text
-    FONT_SIZE_VALUE = 14  # For cell annotations
+# def plot_heatmap_chart_directional(metric_dataframes, metric_name, pct=True, log=False, output_path="../output/links/", save=False, show=True, min_occurance=9):
+#     # Figure and font sizes
+#     FIG_SIZE = (14, 14)   # (width, height) in inches
+#     FONT_SIZE_LABEL = 18   # For axis labels
+#     FONT_SIZE_TEXT = 14    # For tick labels and other text
+#     FONT_SIZE_VALUE = 14  # For cell annotations
 
 
-    if pct==True: 
-        multiplier = 100 
-        unit=''
-    else: 
+#     if pct==True: 
+#         multiplier = 100 
+#         unit=''
+#     else: 
+#         multiplier = 1
+#         unit=''
+
+#     # Define df
+#     if log == True: 
+#         df = np.log10(metric_dataframes['sample_directional'][metric_name]) * multiplier
+#     else: 
+#         df = metric_dataframes['sample_directional'][metric_name] * multiplier
+
+
+#     df_pv = metric_dataframes['pvalues_directional'][metric_name]
+    
+#     # filter for relevant rows 
+#     # pval_filter = (df_pv <= 0.1).any(axis=1)==True
+    
+#     # updated frames 
+#     # df = df[pval_filter]
+#     # df_pv = df_pv[pval_filter]
+
+#     # Additional filtering criterion to exclude links appearing less than once
+#     # Calculate the number of non-zero occurrences for each row (clique)
+#     non_zero_counts = (df > 0).sum(axis=1)
+    
+#     # Filter rows where the number of non-zero occurrences is greater than 5
+#     df = df[non_zero_counts >= min_occurance]
+#     # df_pv = df_pv.loc[df.index]
+
+#     # reindex
+#     df_index = df.copy()
+
+#     # Find the index of the first occurrence (value > 1) in each column (snapshot)
+#     first_occurrence_indices = (df_index.T > 0).idxmax()
+    
+#     # Determine the minimum index (earliest occurrence) for each clique across all snapshots
+#     min_indices = first_occurrence_indices.groupby(first_occurrence_indices.index).min()
+    
+#     # Sort the cliques based on their minimum indices to get the desired order
+#     cliques_order = min_indices.sort_values().index.tolist()
+
+#     # Reindex clique size to df
+#     df= df.reindex(cliques_order)
+#     df_pv = df_pv.reindex(cliques_order)
+
+#     fig, ax = plt.subplots(figsize=FIG_SIZE)
+
+#     # Create colormap
+#     cmap = plt.get_cmap("magma", lut=128)
+#     norm = mcolors.Normalize(vmin=0, vmax=round(df.max().max()*1.2))
+
+#     # Plotting the values
+#     im = ax.imshow(df, cmap=cmap, norm=norm, aspect='auto', interpolation='none')
+
+
+#     # Colorbar
+#     divider = make_axes_locatable(ax)
+#     cax = divider.append_axes("right", size="1%", pad=0.1)  # '2%' determines the width of the colorbar
+#     cbar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation='vertical')
+#     tick_vals = np.array(cbar.get_ticks()) 
+#     cbar.set_ticklabels([f'{round(val)}%' for val in tick_vals])
+#     cbar.ax.tick_params(labelsize=FONT_SIZE_TEXT)  # Increased tick label size
+
+    
+#     # Significance box
+#     ax.text(0.02, 0.02, 'Relative to Control:\n‡ = 0.01\n* = 0.05\n+ = 0.1',
+#             transform=ax.transAxes, fontsize=FONT_SIZE_VALUE,
+#             verticalalignment='bottom', horizontalalignment='left',
+#             bbox=dict(boxstyle="square,pad=0.3", facecolor='lightyellow', edgecolor='black'))
+#     # Labels and title
+#     ax.set_xlabel('Date', size=FONT_SIZE_LABEL)
+#     ax.set_ylabel('Links', size=FONT_SIZE_LABEL)
+#     # ax.set_title(f'Directional Analysis: {metric_name.replace("_", " ").title()}', size=FONT_SIZE_TITLE)
+#     ax.set_xticks(np.arange(len(df.columns)))
+#     ax.set_xticklabels(df.columns, rotation=90, ha='center', size=FONT_SIZE_TEXT)
+#     ax.set_yticks(np.arange(len(df.index)))
+#     ax.set_yticklabels(df.index, size=FONT_SIZE_TEXT)
+#     plt.grid(False)
+#     plt.tight_layout()
+
+
+#     # Annotate the values on the plot
+#     for i in range(len(df.index)):
+#         for j in range(len(df.columns)):
+#             value = df.values[i, j]
+#             pval = df_pv.values[i, j]
+#             pval = pval_to_significance(pval) 
+#             if not np.isnan(value):
+#                 ax.text(j, i, f'{value:.1f}{unit}{pval}', ha='center', va='center', color='white', fontsize=FONT_SIZE_VALUE)
+
+#     # Save and/or show the plot
+#     if save:
+#         plt.savefig(join(output_path, f'{metric_name}_links_directional.pdf'), bbox_inches='tight')
+#     if show:
+#         plt.show()
+
+def plot_heatmap_chart_directional(
+    metric_dataframes, metric_name, pct=True, log=False,
+    output_path="../output/links/", save=False, show=True, min_occurance=9
+):
+    # ---- Figure and font sizes ----
+    FIG_SIZE = (14, 14)
+    FONT_SIZE_LABEL = 18
+    FONT_SIZE_TEXT  = 14
+    FONT_SIZE_VALUE = 14
+
+    # ---- Units / scaling ----
+    if pct:
+        multiplier = 100
+        unit = ""
+    else:
         multiplier = 1
-        unit=''
+        unit = ""
 
-    # Define df
-    if log == True: 
-        df = np.log10(metric_dataframes['sample_directional'][metric_name]) * multiplier
-    else: 
-        df = metric_dataframes['sample_directional'][metric_name] * multiplier
+    # ---- Select dataframes ----
+    if log:
+        df = np.log10(metric_dataframes["sample_directional"][metric_name]) * multiplier
+    else:
+        df = metric_dataframes["sample_directional"][metric_name] * multiplier
 
+    df_pv = metric_dataframes["pvalues_directional"][metric_name]
 
-    df_pv = metric_dataframes['pvalues_directional'][metric_name]
-    
-    # filter for relevant rows 
-    # pval_filter = (df_pv <= 0.1).any(axis=1)==True
-    
-    # updated frames 
-    # df = df[pval_filter]
-    # df_pv = df_pv[pval_filter]
-
-    # Additional filtering criterion to exclude links appearing less than once
-    # Calculate the number of non-zero occurrences for each row (clique)
+    # ---- Filter by minimum occurrences across columns ----
     non_zero_counts = (df > 0).sum(axis=1)
-    
-    # Filter rows where the number of non-zero occurrences is greater than 5
     df = df[non_zero_counts >= min_occurance]
-    # df_pv = df_pv.loc[df.index]
+    df_pv = df_pv.loc[df.index]
 
-    # reindex
-    df_index = df.copy()
+    # ========= Pairing logic to keep directional cliques adjacent =========
+    import re
 
-    # Find the index of the first occurrence (value > 1) in each column (snapshot)
-    first_occurrence_indices = (df_index.T > 0).idxmax()
-    
-    # Determine the minimum index (earliest occurrence) for each clique across all snapshots
-    min_indices = first_occurrence_indices.groupby(first_occurrence_indices.index).min()
-    
-    # Sort the cliques based on their minimum indices to get the desired order
-    cliques_order = min_indices.sort_values().index.tolist()
+    def parse_directional_label(lbl: str):
+        """
+        Best-effort parser that returns (src, dst) from a row label.
+        Tries arrows '->' or '→', then separators like '-', '—', '|'.
+        Strips brackets/quotes if present.
+        """
+        s = str(lbl).strip()
 
-    # Reindex clique size to df
-    df= df.reindex(cliques_order)
-    df_pv = df_pv.reindex(cliques_order)
+        # strip common wrappers
+        s = s.replace("[", "").replace("]", "").replace("'", "").replace('"', "")
+        s = re.sub(r"\s+", " ", s)
 
+        # common arrow patterns
+        for arrow in ["->", "→", "⇒", "=>"]:
+            if arrow in s:
+                parts = [p.strip() for p in s.split(arrow, 1)]
+                if len(parts) == 2:
+                    return parts[0], parts[1]
+
+        # sometimes formatted like "A-B (A)" or "A,B::A" — try to catch "A-B"
+        for sep in [" - ", "-", "—", "|", "/", ","]:
+            if sep in s:
+                parts = [p.strip() for p in s.split(sep)]
+                if len(parts) >= 2:
+                    # heuristic: use first two tokens as src,dst in order
+                    return parts[0], parts[1]
+
+        # fallback: if nothing works, treat as undirected with duplicate src
+        return s, s
+
+    # Build grouping of unordered pairs -> list of row names by direction
+    group_map = {}  # key: frozenset({src,dst}) -> dict{("src","dst"): row_label}
+    first_seen_col_idx = {}  # earliest column index where row has a nonzero value
+
+    for row_lbl in df.index:
+        src, dst = parse_directional_label(row_lbl)
+        key = frozenset((src, dst))
+        group_map.setdefault(key, {})
+        group_map[key][(src, dst)] = row_lbl
+
+        # earliest nonzero column index for this row
+        nz = np.where((df.loc[row_lbl].to_numpy() > 0))[0]
+        if len(nz) > 0:
+            earliest = int(nz[0])
+        else:
+            earliest = int(1e9)  # push empty rows to the end (shouldn't happen after filter)
+        # track earliest per pair (min of both directions)
+        first_seen_col_idx[key] = min(first_seen_col_idx.get(key, earliest), earliest)
+
+    # Sort unordered pairs by earliest appearance across either direction
+    ordered_keys = sorted(first_seen_col_idx.keys(), key=lambda k: first_seen_col_idx[k])
+
+    # Expand to an interleaved row order: (src→dst, dst→src) if both present
+    paired_row_order = []
+    for key in ordered_keys:
+        entries = group_map[key]  # dict with up to two directions
+        # Try to pick a deterministic direction ordering by sorted token names
+        toks = sorted(list(key))
+        if len(toks) == 2:
+            src_pref, dst_pref = toks[0], toks[1]
+        else:
+            # self-pair or parse failure; keep whatever is there
+            src_pref, dst_pref = next(iter(entries.keys()))
+
+        # Append preferred direction first if it exists
+        if (src_pref, dst_pref) in entries:
+            paired_row_order.append(entries[(src_pref, dst_pref)])
+        # Then the opposite direction if it exists
+        if (dst_pref, src_pref) in entries and entries[(dst_pref, src_pref)] not in paired_row_order:
+            paired_row_order.append(entries[(dst_pref, src_pref)])
+
+        # If labels were unusual and produced other directions, append them deterministically
+        for kdir, lbl in sorted(entries.items()):
+            if lbl not in paired_row_order:
+                paired_row_order.append(lbl)
+
+    # Reindex dataframes to the new paired order
+    df = df.reindex(paired_row_order)
+    df_pv = df_pv.reindex(paired_row_order)
+    # ========= End pairing logic =========
+
+    # ---- Plot ----
     fig, ax = plt.subplots(figsize=FIG_SIZE)
-
-    # Create colormap
     cmap = plt.get_cmap("magma", lut=128)
-    norm = mcolors.Normalize(vmin=0, vmax=round(df.max().max()*1.2))
+    vmax = float(np.nanmax(df.values)) if np.isfinite(np.nanmax(df.values)) else 1.0
+    norm = mcolors.Normalize(vmin=0, vmax=round(vmax * 1.2) if vmax > 0 else 1.0)
 
-    # Plotting the values
-    im = ax.imshow(df, cmap=cmap, norm=norm, aspect='auto', interpolation='none')
-
+    im = ax.imshow(df, cmap=cmap, norm=norm, aspect="auto", interpolation="none")
 
     # Colorbar
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="1%", pad=0.1)  # '2%' determines the width of the colorbar
-    cbar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation='vertical')
-    tick_vals = np.array(cbar.get_ticks()) 
-    cbar.set_ticklabels([f'{round(val)}%' for val in tick_vals])
-    cbar.ax.tick_params(labelsize=FONT_SIZE_TEXT)  # Increased tick label size
+    cax = divider.append_axes("right", size="1%", pad=0.1)
+    cbar = plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation="vertical")
+    tick_vals = np.array(cbar.get_ticks())
+    if pct:
+        cbar.set_ticklabels([f"{round(val)}%" for val in tick_vals])
+    cbar.ax.tick_params(labelsize=FONT_SIZE_TEXT)
 
-    
-    # Significance box
-    ax.text(0.02, 0.02, 'Relative to Control:\n‡ = 0.01\n* = 0.05\n+ = 0.1',
-            transform=ax.transAxes, fontsize=FONT_SIZE_VALUE,
-            verticalalignment='bottom', horizontalalignment='left',
-            bbox=dict(boxstyle="square,pad=0.3", facecolor='lightyellow', edgecolor='black'))
-    # Labels and title
-    ax.set_xlabel('Date', size=FONT_SIZE_LABEL)
-    ax.set_ylabel('Links', size=FONT_SIZE_LABEL)
-    # ax.set_title(f'Directional Analysis: {metric_name.replace("_", " ").title()}', size=FONT_SIZE_TITLE)
+    # Significance legend
+    ax.text(
+        0.02, 0.02, "Relative to Control:\n‡ = 0.01\n* = 0.05\n+ = 0.1",
+        transform=ax.transAxes, fontsize=FONT_SIZE_VALUE,
+        va="bottom", ha="left",
+        bbox=dict(boxstyle="square,pad=0.3", facecolor="lightyellow", edgecolor="black")
+    )
+
+    # Labels and ticks
+    ax.set_xlabel("Date", size=FONT_SIZE_LABEL)
+    ax.set_ylabel("Links", size=FONT_SIZE_LABEL)
     ax.set_xticks(np.arange(len(df.columns)))
-    ax.set_xticklabels(df.columns, rotation=90, ha='center', size=FONT_SIZE_TEXT)
+    ax.set_xticklabels(df.columns, rotation=90, ha="center", size=FONT_SIZE_TEXT)
     ax.set_yticks(np.arange(len(df.index)))
     ax.set_yticklabels(df.index, size=FONT_SIZE_TEXT)
     plt.grid(False)
     plt.tight_layout()
 
-
-    # Annotate the values on the plot
+    # Annotate cell values + significance
     for i in range(len(df.index)):
         for j in range(len(df.columns)):
             value = df.values[i, j]
-            pval = df_pv.values[i, j]
-            pval = pval_to_significance(pval) 
             if not np.isnan(value):
-                ax.text(j, i, f'{value:.1f}{unit}{pval}', ha='center', va='center', color='white', fontsize=FONT_SIZE_VALUE)
+                pval = df_pv.values[i, j]
+                sig = pval_to_significance(pval)
+                ax.text(j, i, f"{value:.1f}{unit}{sig}", ha="center", va="center",
+                        color="white", fontsize=FONT_SIZE_VALUE)
 
-    # Save and/or show the plot
     if save:
-        plt.savefig(join(output_path, f'{metric_name}_links_directional.pdf'), bbox_inches='tight')
+        plt.savefig(join(output_path, f"{metric_name}_links_directional.pdf"), bbox_inches="tight")
     if show:
         plt.show()
+
         
 
 
