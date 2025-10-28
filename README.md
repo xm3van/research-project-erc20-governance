@@ -1,8 +1,8 @@
-# Research Repository: Governance Centralization Using Bipartite Complex Systems Token Network Projections
+# Research Repository: Concentration in Governance Control Across Decentralised Finance Protocols.
 
 **Abstract:** Blockchain-based systems, and the platforms built upon them, are frequently governed through tokens granting their holders voting rights over core protocol functions and funds. Centralisation in token-based voting systems, as common in Decentralised Finance (DeFi) protocols, is typically analysed by examining token holdings' distribution across addresses. This paper expands this perspective by exploring shared token holdings of addresses across multiple DeFi protocols. We construct a Statistically Validated Network (SVN) based on shared governance token holding among addresses. Using the links within the SVN, we identify influential addresses that shape these connections and conduct a post-hoc analysis to examine their characteristics and behaviour. Our findings reveal persistent influential links over time, predominantly involving addresses associated with institutional investors who maintain significant token supplies across the sampled protocols. These links often show disproportionate influence in a single token constituting the link. Furthermore, token holdings tend to shift in response to market cycles.
 
-> Citation:  To be added.
+> Citation:  Eisermann, Thomas, Carlo Campajola, Claudio J. Tessone, and Andreia Sofia Teixeira. "Concentration in Governance Control Across Decentralised Finance Protocols." arXiv preprint arXiv:2501.13377 (2025).
 
 
 **Repository Structure:**
