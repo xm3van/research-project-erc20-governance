@@ -56,7 +56,7 @@ class LinkData:
             'internal_wealth',
             'gini_internal_wealth',
             'external_wealth',
-            'gini_external_wealth'
+            'gini_external_wealth',
             'total_influence_directional'
         ]
         return metric_names
@@ -406,8 +406,8 @@ class LinkAnalysis:
         nnormalised_pct_link_pval = permutation_test(normalised_pct_supply_internal, normalised_pct_supply_internalC, method='mean', alternative='greater')
 
         self.analysis_result['internal_influence_directional'] = normalised_pct_supply_internal.sum()
-        self.analysis_result_sample_population['total_influence_directional'] = normalised_pct_supply_internalC.sum()
-        self.pvalues['total_influence_directional'] = nnormalised_pct_link_pval
+        self.analysis_result_sample_population['internal_influence_directional'] = normalised_pct_supply_internalC.sum()
+        self.pvalues['internal_influence_directional'] = nnormalised_pct_link_pval
 
     ###########################
     ##### Wealth Metrics ######
