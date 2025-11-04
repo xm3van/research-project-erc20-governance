@@ -93,40 +93,103 @@ def calculate_similarity_matrix(graphs):
 
 
 
-def visualize_network_grid(graphs, dates, address_to_symbol, output_directory, layout=nx.kamada_kawai_layout):
-    # Define the grid size
-    rows, cols = 3, 6  # Adjust based on the number of graphs
-    fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
-    axes = axes.flatten()  # Flatten to iterate easily
+# def visualize_network_grid(graphs, dates, address_to_symbol, output_directory, layout=nx.kamada_kawai_layout):
+#     # Define the grid size
+#     rows, cols = 3, 6  # Adjust based on the number of graphs
+#     fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
+#     axes = axes.flatten()  # Flatten to iterate easily
     
-    for ax, (snapshot, graph) in zip(axes, graphs.items()):
-        # Relabel nodes with symbols using the mapping
-        relabeled_graph = nx.relabel_nodes(graph, address_to_symbol)
+#     for ax, (snapshot, graph) in zip(axes, graphs.items()):
+#         # Relabel nodes with symbols using the mapping
+#         relabeled_graph = nx.relabel_nodes(graph, address_to_symbol)
         
-        # Compute layout
-        pos = layout(relabeled_graph)  
+#         # Compute layout
+#         pos = layout(relabeled_graph)  
         
-        # Draw the graph with relabeled nodes
-        nx.draw(relabeled_graph, pos, ax=ax, with_labels=True, node_size=50, node_color='skyblue', edge_color='gray', font_size=12)
-        ax.set_title(dates[snapshot], fontsize=14)
-        ax.set_axis_off()  # Hide axis for clarity
+#         # Draw the graph with relabeled nodes
+#         nx.draw(relabeled_graph, pos, ax=ax, with_labels=True, node_size=50, node_color='skyblue', edge_color='gray', font_size=12)
+#         ax.set_title(dates[snapshot], fontsize=14)
+#         ax.set_axis_off()  # Hide axis for clarity
         
-        # Draw a rectangle around the plot area
-        rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='black', facecolor='none', transform=ax.transAxes, clip_on=False)
+#         # Draw a rectangle around the plot area
+#         rect = patches.Rectangle((0, 0), 1, 1, linewidth=1, edgecolor='black', facecolor='none', transform=ax.transAxes, clip_on=False)
+#         ax.add_patch(rect)
+
+#     # Turn off any unused subplots
+#     for i in range(len(graphs), len(axes)):
+#         axes[i].set_axis_off()
+    
+#     # Adjust layout to prevent overlap
+#     plt.tight_layout()
+#     plt.subplots_adjust(top=0.9)  # Adjust the top spacing to accommodate title if necessary
+    
+#     # Save the figure
+#     fig.suptitle('Validated Token Network Projections Over Time', fontsize=16)
+#     plt.savefig(os.path.join(output_directory, "network_projection_grid.png"), format='png', dpi=300)
+#     plt.show()
+
+import os
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import networkx as nx
+
+def visualize_network_grid(graphs, dates, address_to_symbol, output_directory, layout=nx.kamada_kawai_layout):
+    # 1) build a "master" graph with all nodes that ever appear
+    master_g = nx.Graph()
+    for g in graphs.values():
+        # relabel to symbols first so we layout on the final labels
+        relabeled = nx.relabel_nodes(g, address_to_symbol)
+        master_g.add_nodes_from(relabeled.nodes())
+        master_g.add_edges_from(relabeled.edges())
+
+    # 2) compute ONE layout on the master graph
+    fixed_pos = layout(master_g)
+
+    # grid size
+    rows, cols = 3, 6
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 10))
+    axes = axes.flatten()
+
+    for ax, (snapshot, g) in zip(axes, graphs.items()):
+        relabeled_g = nx.relabel_nodes(g, address_to_symbol)
+
+        # 3) draw using the fixed positions (subset for current graph)
+        # networkx is fine if you pass a pos dict with extra keys
+        nx.draw(
+            relabeled_g,
+            fixed_pos,
+            ax=ax,
+            with_labels=True,
+            node_size=50,
+            node_color='skyblue',
+            edge_color='gray',
+            font_size=12,          # a bit smaller so labels fit
+        )
+
+        ax.set_title(dates[snapshot], fontsize=12)
+        ax.set_axis_off()
+
+        # frame
+        rect = patches.Rectangle((0, 0), 1, 1,
+                                 linewidth=1,
+                                 edgecolor='black',
+                                 facecolor='none',
+                                 transform=ax.transAxes,
+                                 clip_on=False)
         ax.add_patch(rect)
 
-    # Turn off any unused subplots
+    # turn off unused subplots
     for i in range(len(graphs), len(axes)):
         axes[i].set_axis_off()
-    
-    # Adjust layout to prevent overlap
+
     plt.tight_layout()
-    plt.subplots_adjust(top=0.9)  # Adjust the top spacing to accommodate title if necessary
-    
-    # Save the figure
-    fig.suptitle('Validated Token Network Projections Over Time', fontsize=16)
-    plt.savefig(os.path.join(output_directory, "network_projection_grid.png"), format='png', dpi=300)
+    fig.suptitle('Validated Token Network Projections Over Time', fontsize=16, y=0.99)
+    plt.subplots_adjust(top=0.9)
+
+    out_path = os.path.join(output_directory, "network_projection_grid.pdf")
+    plt.savefig(out_path, format='pdf', dpi=300)
     plt.show()
+
     
 
 def plot_similarity_heatmap(similarity_matrix, snapshot_list, dates, output_directory):
